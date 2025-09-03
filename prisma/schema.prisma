@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  servers   Server[]
+}
+
+model Server {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  name       String
+  ipAddress  String
+  macAddress String   @unique
+  createdAt  DateTime @default(now()) @map(name: "created_at")
+  updatedAt  DateTime @updatedAt @map(name: "updated_at")
+
+  staticMetrics  ServerStaticMetric[]
+  dynamicMetrics ServerDynamicMetric[]
+  historyMetrics ServerMetricHistory[]
+
+  @@index([userId])
+}
+
+model ServerStaticMetric {
+  id         String   @id @default(cuid())
+  serverId   String
+  userId     String
+  server     Server   @relation(fields: [serverId], references: [id])
+  staticInfo Json
+  createdAt  DateTime @default(now()) @map(name: "created_at")
+
+  @@index([userId])
+  @@index([serverId])
+}
+
+model ServerDynamicMetric {
+  id          String   @id @default(cuid())
+  serverId    String
+  userId      String
+  server      Server   @relation(fields: [serverId], references: [id])
+  dynamicInfo Json
+  updatedAt   DateTime @updatedAt @map(name: "updated_at")
+  createdAt   DateTime @default(now()) @map(name: "created_at")
+  deletedAt   DateTime? @map(name: "deleted_at")
+
+  @@index([serverId, createdAt])
+  @@index([userId])
+}
+
+
+model ServerMetricHistory {
+  id        String   @id @default(cuid())
+  serverId  String
+  userId    String
+  server    Server   @relation(fields: [serverId], references: [id])
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  deletedAt DateTime @map(name: "deleted_at")
+  type      String
+  day1      Json? @map(name: "day1")
+  days2     Json? @map(name: "days2")
+  week1     Json? @map(name: "week1")
+  days15    Json? @map(name: "days15")
+  month1    Json? @map(name: "month1")
+  months2   Json? @map(name: "months2")
+
+  @@index([serverId])
+  @@index([userId])
+}

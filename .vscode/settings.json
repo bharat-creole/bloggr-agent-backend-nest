@@ -1,0 +1,19 @@
+{
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.singleQuote": true,
+  "editor.codeActionsOnSave": [
+    "source.fixAll.format",
+  ],
+  "editor.tabSize": 2,
+  "cSpell.words": [
+    "appendonly",
+    "bullmq",
+    "cuid",
+    "requirepass"
+  ],
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  }
+}

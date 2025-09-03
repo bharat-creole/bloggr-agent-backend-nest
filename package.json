@@ -1,0 +1,65 @@
+{
+	"name": "ai-server-health",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"scripts": {
+		"dev": "nodemon --ext ts",
+		"build": "rimraf ./dist && tsc -p .",
+		"prepare": "husky",
+		"postinstall": "npx prisma generate",
+		"start:prod": "pnpm build && node dist/index.js",
+		"lint": "pnpm biome lint --write ./src",
+		"format": "pnpm biome format --write ./src",
+		"prisma:generate": "npx prisma generate",
+		"prisma:migrate:dev": "npx prisma migrate dev --preview-feature",
+		"prisma:migrate:prod": "npx prisma migrate deploy --preview-feature",
+		"prisma:studio": "npx prisma studio"
+	},
+	"engines": {
+		"node": ">=18",
+		"pnpm": ">=8.0.0"
+	},
+	"lint-staged": {
+		"*.js": [
+			"pnpm lint && pnpm format"
+		],
+		"*.ts": [
+			"pnpm lint && pnpm format"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/body-parser": "^1.19.5",
+		"@types/express": "^5.0.0",
+		"@types/node": "^22.13.2",
+		"colorette": "^2.0.20",
+		"dotenv": "^16.4.7",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.4.3",
+		"nodemon": "^3.1.9",
+		"rimraf": "^6.0.1",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.7.3",
+		"winston": "^3.17.0"
+	},
+	"dependencies": {
+		"@prisma/client": "^6.3.1",
+		"@types/node-cron": "^3.0.11",
+		"axios": "^1.11.0",
+		"body-parser": "^1.20.3",
+		"bullmq": "^5.40.4",
+		"cors": "^2.8.5",
+		"express": "^4.21.2",
+		"form-data": "^4.0.4",
+		"ioredis": "^5.5.0",
+		"node-cron": "^3.0.3",
+		"openai": "^4.85.3",
+		"pnpm": "^10.5.2",
+		"socket.io": "^4.8.1",
+		"uuid": "^11.1.0"
+	}
+}
