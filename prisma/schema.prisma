@@ -1,81 +1,289 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now()) @map(name: "created_at")
-  updatedAt DateTime @updatedAt @map(name: "updated_at")
-  servers   Server[]
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuid_ossp(map: "uuid-ossp", schema: "public")]
 }
 
-model Server {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  name       String
-  ipAddress  String
-  macAddress String   @unique
-  createdAt  DateTime @default(now()) @map(name: "created_at")
-  updatedAt  DateTime @updatedAt @map(name: "updated_at")
-
-  staticMetrics  ServerStaticMetric[]
-  dynamicMetrics ServerDynamicMetric[]
-  historyMetrics ServerMetricHistory[]
-
-  @@index([userId])
+model SequelizeMeta {
+  name String @id @db.VarChar(255)
 }
 
-model ServerStaticMetric {
-  id         String   @id @default(cuid())
-  serverId   String
-  userId     String
-  server     Server   @relation(fields: [serverId], references: [id])
-  staticInfo Json
-  createdAt  DateTime @default(now()) @map(name: "created_at")
-
-  @@index([userId])
-  @@index([serverId])
+model add_ons {
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(255)
+  priceID   String?  @db.VarChar(255)
+  createdAt DateTime @db.Timestamptz(6)
+  updatedAt DateTime @db.Timestamptz(6)
 }
 
-model ServerDynamicMetric {
-  id          String   @id @default(cuid())
-  serverId    String
-  userId      String
-  server      Server   @relation(fields: [serverId], references: [id])
-  dynamicInfo Json
-  updatedAt   DateTime @updatedAt @map(name: "updated_at")
-  createdAt   DateTime @default(now()) @map(name: "created_at")
-  deletedAt   DateTime? @map(name: "deleted_at")
-
-  @@index([serverId, createdAt])
-  @@index([userId])
+model ai_personas {
+  id        String    @id @db.Uuid
+  userId    String?   @db.Uuid
+  name      String    @db.VarChar(255)
+  aiPersona String
+  deletedAt DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @db.Timestamptz(6)
+  updatedAt DateTime  @db.Timestamptz(6)
+  users     users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  drafts    drafts[]
 }
 
+model blogs {
+  id                String        @id @db.Uuid
+  userId            String?       @db.Uuid
+  title             String?       @db.VarChar(255)
+  plagarisedCount   Int?
+  referenceLink     String?       @db.VarChar(255)
+  secondaryKeywords String?       @db.VarChar(255)
+  internalLinks     String?       @db.VarChar(255)
+  brandVoice        String?       @db.Uuid
+  aiPersona         String?       @db.Uuid
+  words             Int[]
+  content           String[]
+  deletedAt         DateTime?     @db.Timestamptz(6)
+  createdAt         DateTime      @db.Timestamptz(6)
+  updatedAt         DateTime      @db.Timestamptz(6)
+  language          String[]
+  brand_voices      brand_voices? @relation(fields: [brandVoice], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
 
-model ServerMetricHistory {
-  id        String   @id @default(cuid())
-  serverId  String
-  userId    String
-  server    Server   @relation(fields: [serverId], references: [id])
-  updatedAt DateTime @updatedAt @map(name: "updated_at")
-  createdAt DateTime @default(now()) @map(name: "created_at")
-  deletedAt DateTime @map(name: "deleted_at")
-  type      String
-  day1      Json? @map(name: "day1")
-  days2     Json? @map(name: "days2")
-  week1     Json? @map(name: "week1")
-  days15    Json? @map(name: "days15")
-  month1    Json? @map(name: "month1")
-  months2   Json? @map(name: "months2")
+model brand_voices {
+  id                   String                      @id @db.Uuid
+  userId               String?                     @db.Uuid
+  name                 String?                     @db.VarChar(255)
+  voiceType            enum_brand_voices_voiceType
+  voiceContentUrl      String?                     @db.VarChar(255)
+  voiceContentFilePath String?                     @db.VarChar(255)
+  voiceContentText     String?
+  brandVoice           String?
+  deletedAt            DateTime?                   @db.Timestamptz(6)
+  createdAt            DateTime                    @db.Timestamptz(6)
+  updatedAt            DateTime                    @db.Timestamptz(6)
+  blogs                blogs[]
+  drafts               drafts[]
+}
 
-  @@index([serverId])
-  @@index([userId])
+model campaigns {
+  id           String    @id @db.Uuid
+  contactId    Int?
+  tagId        Int?
+  contactTagId Int?
+  deletedAt    DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @db.Timestamptz(6)
+  updatedAt    DateTime  @db.Timestamptz(6)
+}
+
+model drafts {
+  id                String        @id @db.Uuid
+  userId            String?       @db.Uuid
+  topic             String?       @db.VarChar(255)
+  location          String?       @db.VarChar(255)
+  primaryKeyword    String?       @db.VarChar(255)
+  title             String?       @db.VarChar(255)
+  referenceLink     String?       @db.VarChar(255)
+  secondaryKeywords String[]      @db.VarChar(255)
+  internalLinks     Json[]        @db.Json
+  brandVoice        String?       @db.Uuid
+  aiPersona         String?       @db.Uuid
+  deletedAt         DateTime?     @db.Timestamptz(6)
+  createdAt         DateTime      @db.Timestamptz(6)
+  updatedAt         DateTime      @db.Timestamptz(6)
+  referencedata     Json[]        @db.Json
+  visitedstep       Int?
+  outline           String?
+  ai_personas       ai_personas?  @relation(fields: [aiPersona], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  brand_voices      brand_voices? @relation(fields: [brandVoice], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users?        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model feedbacks {
+  id        String    @id @db.Uuid
+  userId    String?   @db.Uuid
+  comment   String    @db.VarChar(255)
+  feedback  String    @db.VarChar(255)
+  deletedAt DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @db.Timestamptz(6)
+  updatedAt DateTime  @db.Timestamptz(6)
+  users     users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model leads {
+  id        Int      @id @default(autoincrement())
+  userId    String?  @db.Uuid
+  identity  String   @db.VarChar(255)
+  role      String   @db.VarChar(255)
+  search    String   @db.VarChar(255)
+  createdAt DateTime @db.Timestamptz(6)
+  updatedAt DateTime @db.Timestamptz(6)
+}
+
+model logs {
+  id         Int               @id @default(autoincrement())
+  userId     String?           @db.Uuid
+  message    String            @db.VarChar(255)
+  event      enum_logs_event[]
+  createdAt  DateTime          @db.Timestamptz(6)
+  updatedAt  DateTime          @db.Timestamptz(6)
+  count      Int?
+  totalCount Int?
+  users      users?            @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model payments {
+  id             String   @id @db.Uuid
+  userId         String?  @db.Uuid
+  planId         String?  @db.VarChar(255)
+  subscriptionId String?  @db.VarChar(255)
+  status         String?  @db.VarChar(255)
+  startAt        Int?
+  endAt          Int?
+  createdAt      DateTime @db.Timestamptz(6)
+  updatedAt      DateTime @db.Timestamptz(6)
+}
+
+model plans {
+  id                    Int                    @id @default(autoincrement())
+  name                  String?                @db.VarChar(255)
+  priceID               String?                @db.VarChar(255)
+  blogCount             Int?
+  fileCount             Int?
+  linkCount             Int?
+  plagarismCheckCount   Int?
+  regenerationBlogCount Int?
+  multiLanguage         Boolean?
+  keywordResearch       Boolean?
+  llmModels             enum_plans_llmModels[]
+  createdAt             DateTime               @db.Timestamptz(6)
+  updatedAt             DateTime               @db.Timestamptz(6)
+  embeddingLimit        Int?
+}
+
+model style_guides {
+  id         String    @id @db.Uuid
+  userId     String?   @db.Uuid
+  name       String    @db.VarChar(255)
+  styleGuide String
+  deletedAt  DateTime? @db.Timestamptz(6)
+  createdAt  DateTime  @db.Timestamptz(6)
+  updatedAt  DateTime  @db.Timestamptz(6)
+}
+
+model tags {
+  id               String   @id @db.Uuid
+  tagId            Int?
+  name             String?
+  slug             String?  @db.VarChar(255)
+  subscriber_count Int?
+  createdAt        DateTime @db.Timestamptz(6)
+  updatedAt        DateTime @db.Timestamptz(6)
+}
+
+model user_usages {
+  id                    Int      @id @default(autoincrement())
+  userId                String?  @db.Uuid
+  blogCreated           Int?
+  blogLimit             Int?
+  blogRegenerated       Int?
+  blogRegenerationLimit Int?
+  plagarismChecked      Int?
+  plagarismCheckLimit   Int?
+  createdAt             DateTime @db.Timestamptz(6)
+  updatedAt             DateTime @db.Timestamptz(6)
+}
+
+model users {
+  id             String              @id @db.Uuid
+  username       String?             @db.VarChar(255)
+  email          String?             @unique @db.VarChar(255)
+  profilePhoto   String?             @db.VarChar(255)
+  password       String?             @db.VarChar(255)
+  customerId     String?             @db.VarChar(255)
+  subscriptionId String?             @db.VarChar(255)
+  planId         String?             @db.VarChar(255)
+  planExpiry     DateTime?           @db.Timestamptz(6)
+  createdAt      DateTime            @db.Timestamptz(6)
+  updatedAt      DateTime            @db.Timestamptz(6)
+  language       enum_users_language @default(en)
+  model          enum_users_model    @default(gemini_1_5_flash)
+  contactId      Int?
+  isNew          Boolean             @default(true)
+  lastActiveAt   DateTime            @default(now()) @db.Timestamptz(6)
+  ipAddress      String?             @db.VarChar(255)
+  country        String?             @db.VarChar(255)
+  ai_personas    ai_personas[]
+  drafts         drafts[]
+  feedbacks      feedbacks[]
+  logs           logs[]
+  threads        threads[]
+}
+
+model zohoCreds {
+  id           Int      @id @default(autoincrement())
+  refreshToken String?  @db.VarChar(255)
+  accessToken  String?  @db.VarChar(255)
+  clientId     String?  @db.VarChar(255)
+  clientSecret String?  @db.VarChar(255)
+  createdAt    DateTime @db.Timestamptz(6)
+  updatedAt    DateTime @db.Timestamptz(6)
+}
+
+model threads {
+  id          String    @id @db.Uuid
+  userId      String?   @db.Uuid
+  threadId    String?   @db.VarChar(255)
+  messageName String?   @db.VarChar(255)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @db.Timestamptz(6)
+  updatedAt   DateTime  @db.Timestamptz(6)
+  users       users?    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum enum_brand_voices_voiceType {
+  URL
+  FILE
+  TEXT
+}
+
+enum enum_logs_event {
+  BLOG_CREATED
+  BLOG_DELETED
+  BLOG_COUNT_ADDED
+  BRAND_VOICE_ADDED
+  REGENERATION_USED
+  REGENERATION_COUNT_ADDED
+  PLAGIARISM_CHECK_USED
+  PLAGIARISM_CHECK_COUNT_ADDED
+}
+
+enum enum_plans_llmModels {
+  gpt_4o           @map("gpt-4o")
+  gemini_1_5_flash @map("gemini-1.5-flash")
+  gemini_1_5_pro   @map("gemini-1.5-pro")
+  gpt_o1_mini      @map("gpt-o1-mini")
+  claude_3_5_sonet @map("claude_3.5_sonet")
+}
+
+enum enum_users_language {
+  en
+  es
+  fr
+  zh
+  de
+  zh_HK @map("zh-HK")
+}
+
+enum enum_users_model {
+  basic
+  standard
+  premium
+  gpt_4o           @map("gpt-4o")
+  gemini_1_5_flash @map("gemini-1.5-flash")
+  gemini_1_5_pro   @map("gemini-1.5-pro")
+  gpt_o1_mini      @map("gpt-o1-mini")
+  claude_3_5_sonet @map("claude_3.5_sonet")
 }

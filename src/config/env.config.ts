@@ -9,6 +9,7 @@ class Config {
 	public REDIS_PASSWORD: string | undefined;
 	public REDIS_USERNAME: string | undefined;
 	public REDIS_PORT: string | undefined;
+	public JWT_SECRET_KEY: string | undefined;
 
 	constructor() {
 		this.NODE_ENV = process.env.NODE_ENV;
@@ -17,6 +18,7 @@ class Config {
 		this.REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 		this.REDIS_USERNAME = process.env.REDIS_USERNAME;
 		this.REDIS_PORT = process.env.REDIS_PORT;
+		this.JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 	}
 
 	public validateConfig(): void {

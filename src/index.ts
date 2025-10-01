@@ -24,7 +24,7 @@ app.use(bodyParser.json());
 app.use(
 	bodyParser.urlencoded({
 		extended: true,
-	})
+	}),
 );
 
 app.get(
@@ -36,13 +36,11 @@ app.get(
 			});
 		} catch (err) {
 			console.error(
-				`error while getting server status: ${JSON.stringify(
-					err
-				)}`
+				`error while getting server status: ${JSON.stringify(err)}`,
 			);
 			httpError(next, err, req, 500);
 		}
-	}
+	},
 );
 
 app.use('/api/v1/chatbot', aiChatbotRouter);

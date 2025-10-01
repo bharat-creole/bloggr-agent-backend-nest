@@ -22,3 +22,11 @@ export type THttpError = {
 	data: unknown;
 	trace?: object | null;
 };
+
+declare global {
+	namespace Express {
+		interface Request {
+			userId?: string;
+		}
+	}
+}

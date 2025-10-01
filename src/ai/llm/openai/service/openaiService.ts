@@ -29,22 +29,17 @@ class OpenAIService {
 			for (let i = 0; i < data.length; i += batchSize) {
 				const batch = data.slice(i, i + batchSize);
 				// console.log('batch:', batch);
-				const stringifiedArray = batch.map((item: any) =>
-					JSON.stringify(item)
-				);
+				const stringifiedArray = batch.map((item: any) => JSON.stringify(item));
 				// console.log('stringifiedArray:', stringifiedArray);
 
-				const embeddingRes =
-					await this.openai.embeddings.create({
-						model: 'text-embedding-3-large',
-						input: stringifiedArray,
-					});
+				const embeddingRes = await this.openai.embeddings.create({
+					model: 'text-embedding-3-large',
+					input: stringifiedArray,
+				});
 
 				// console.log('embeddingRes:', embeddingRes);
 
-				const embedding = embeddingRes.data.map(
-					(item: any) => item.embedding
-				);
+				const embedding = embeddingRes.data.map((item: any) => item.embedding);
 				for (const arr of embedding) {
 					if (Array.isArray(arr) && arr.length > 0) {
 						embeddingsArray.push([...arr]);
@@ -65,9 +60,7 @@ class OpenAIService {
 				input: data,
 			});
 
-			const embedding = embeddingRes.data.map(
-				(item: any) => item.embedding
-			);
+			const embedding = embeddingRes.data.map((item: any) => item.embedding);
 
 			// console.log("embedding:", embedding);
 
@@ -78,10 +71,7 @@ class OpenAIService {
 		}
 	}
 
-	public async getKeywordsFromTitles(
-		titles: any,
-		reference_meaning: string
-	) {
+	public async getKeywordsFromTitles(titles: any, reference_meaning: string) {
 		const prompt = `
 		You are a helpful assistant that extracts keywords from titles. From the titles, extract the keywords that are most relevant to the title from seo perspective. From given titles only analyze and list the keywords that are most relevant to the title. Analyze and list those are highly meaningful and relevant to the title.
 
@@ -136,7 +126,7 @@ class OpenAIService {
 
 	public async filterKeywordsWithReferenceMeaning(
 		keywords: any,
-		reference_meaning: string
+		reference_meaning: string,
 	) {
 		console.log(keywords, 'keywords');
 		console.log(reference_meaning, 'reference_meaning');

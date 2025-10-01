@@ -33,18 +33,14 @@ const ensureThreadObject = (threadId: string): any => {
 	if (!obj) {
 		obj = { thread_id: threadId };
 		fileData.push(obj);
-		fs.writeFileSync(
-			filePath,
-			JSON.stringify(fileData, null, 2),
-			'utf-8'
-		);
+		fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2), 'utf-8');
 	}
 	return obj;
 };
 
 const updateThreadObject = (
 	threadId: string,
-	data: Record<string, any>
+	data: Record<string, any>,
 ): any => {
 	const fileData = loadFileData();
 	let obj = fileData.find((item: any) => item.thread_id === threadId);
@@ -62,7 +58,7 @@ const updateThreadObject = (
 export const extractJsonArray = (input: string) => {
 	try {
 		const match = input.match(
-			/\[\s*(?:{[^}]*}|\s*"[^"]*"\s*)(?:\s*,\s*(?:{[^}]*}|\s*"[^"]*"\s*))*\s*\]/
+			/\[\s*(?:{[^}]*}|\s*"[^"]*"\s*)(?:\s*,\s*(?:{[^}]*}|\s*"[^"]*"\s*))*\s*\]/,
 		);
 
 		if (!match) {
@@ -85,7 +81,7 @@ export const extractJsonArray = (input: string) => {
 
 export const chatbotService = (
 	req: Request,
-	res: Response
+	res: Response,
 	// next: NextFunction
 ): any => {
 	console.log('Chatbot service called');
@@ -97,23 +93,23 @@ export const chatbotService = (
 export const getPrimaryKeywordData = async (
 	keyword: string,
 	country: string,
-	reference_meaning: string
+	reference_meaning: string,
 ): Promise<any> => {
 	console.log(
 		keyword,
 		country,
 		reference_meaning,
-		'keyword, country, reference_meaning'
+		'keyword, country, reference_meaning',
 	);
 
 	try {
 		// Get the Rank data from Google Search
 		const API_KEY =
-			'b673f651123b57de00c25a4e0ba6bb242acccfd0419bbde14ea0e61e5b1e1294';
+			'99153026b11f83b06d4004187125160974147def6663d513216b51072171cc9f';
 		const query = keyword;
 
 		const getSerpApiUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(
-			query
+			query,
 		)}&hl=en&gl=us&api_key=${API_KEY}`;
 
 		const googleSearchResponse = await axios.get(getSerpApiUrl);
@@ -127,29 +123,22 @@ export const getPrimaryKeywordData = async (
 			}
 		});
 
-		console.log(
-			googleSearchData.length,
-			googleSearchData,
-			'googleSearchData'
-		);
+		console.log(googleSearchData.length, googleSearchData, 'googleSearchData');
 		// return googleSearchData;
 
 		// Get Keywords from titles from LLms
 
-		const keywordsFromTitles =
-			await openaiService.getKeywordsFromTitles(
-				googleSearchData,
-				reference_meaning
-			);
-
-		const keywordsFromTitlesArray = extractJsonArray(
-			keywordsFromTitles || ''
+		const keywordsFromTitles = await openaiService.getKeywordsFromTitles(
+			googleSearchData,
+			reference_meaning,
 		);
+
+		const keywordsFromTitlesArray = extractJsonArray(keywordsFromTitles || '');
 
 		console.log(
 			keywordsFromTitlesArray?.length,
 			keywordsFromTitlesArray,
-			'keywordsFromTitlesArray'
+			'keywordsFromTitlesArray',
 		);
 
 		// return keywordsFromTitlesArray;
@@ -176,7 +165,7 @@ export const getPrimaryKeywordData = async (
 							Authorization: `Bearer ${token}`,
 						},
 						httpsAgent,
-					}
+					},
 				);
 				console.log(response.data, 'response.data>>>>>>>>>>>>');
 
@@ -201,56 +190,44 @@ export const getPrimaryKeywordData = async (
 				const keywordTexts = response.data.text
 					.filter(
 						(item: any) =>
-							item.keywordIdeaMetrics
-								.competitionIndex < 50 &&
-							item.keywordIdeaMetrics
-								.avgMonthlySearches >= 100
+							item.keywordIdeaMetrics.competitionIndex < 50 &&
+							item.keywordIdeaMetrics.avgMonthlySearches >= 100,
 					)
 					.sort(
 						(a: any, b: any) =>
-							b.keywordIdeaMetrics
-								.avgMonthlySearches -
-							a.keywordIdeaMetrics
-								.avgMonthlySearches
+							b.keywordIdeaMetrics.avgMonthlySearches -
+							a.keywordIdeaMetrics.avgMonthlySearches,
 					)
 					.slice(0, 3)
 					.map((item: any) => {
 						return {
 							keyword: item.text,
-							volume: item.keywordIdeaMetrics
-								.avgMonthlySearches,
-							competition:
-								item.keywordIdeaMetrics
-									.competitionIndex,
+							volume: item.keywordIdeaMetrics.avgMonthlySearches,
+							competition: item.keywordIdeaMetrics.competitionIndex,
 						};
 					});
 
 				finalKeywordsArray.push(...keywordTexts);
 
-				finalKeywordsArray.sort(
-					(a: any, b: any) => b.volume - a.volume
-				);
+				finalKeywordsArray.sort((a: any, b: any) => b.volume - a.volume);
 			} catch (error) {
-				console.error(
-					`Error fetching for keyword "${userKeyword}":`,
-					error
-				);
+				console.error(`Error fetching for keyword "${userKeyword}":`, error);
 			}
 		}
 
 		const filterKeywordsWithReferenceMeaning =
 			await openaiService.filterKeywordsWithReferenceMeaning(
 				finalKeywordsArray,
-				reference_meaning
+				reference_meaning,
 			);
 
 		const filterKeywordsWithReferenceMeaningArray = extractJsonArray(
-			filterKeywordsWithReferenceMeaning || ''
+			filterKeywordsWithReferenceMeaning || '',
 		);
 
 		console.log(
 			filterKeywordsWithReferenceMeaningArray,
-			'filterKeywordsWithReferenceMeaningArray'
+			'filterKeywordsWithReferenceMeaningArray',
 		);
 
 		console.log(finalKeywordsArray.length, 'finalKeywordsArray');
@@ -296,12 +273,12 @@ export const getPrimaryKeywordData = async (
 
 export const setPrimarySecondaryKeywordData = async (
 	primaryKeyword: string,
-	secondaryKeyword: string
+	secondaryKeyword: string,
 ): Promise<any> => {
 	console.log(
 		primaryKeyword,
 		secondaryKeyword,
-		'primaryKeyword>>>>>>>>>>>>>>>>>>, secondaryKeyword>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+		'primaryKeyword>>>>>>>>>>>>>>>>>>, secondaryKeyword>>>>>>>>>>>>>>>>>>>>>>>>>>>',
 	);
 };
 
@@ -328,11 +305,11 @@ export const findKeywordInfoData = async (keywords: string[]): Promise<any> => {
 						Authorization: `Bearer ${token}`,
 					},
 					httpsAgent,
-				}
+				},
 			);
 			keywordDataArray.push(...response.data.text);
 			console.log(response.data, 'response');
-		})
+		}),
 	);
 	console.log(keywordDataArray, 'keywordDataArray');
 	let keywordTexts: any[] = [];
@@ -340,12 +317,12 @@ export const findKeywordInfoData = async (keywords: string[]): Promise<any> => {
 		.filter(
 			(item: any) =>
 				item.keywordIdeaMetrics.competitionIndex < 50 &&
-				item.keywordIdeaMetrics.avgMonthlySearches >= 100
+				item.keywordIdeaMetrics.avgMonthlySearches >= 100,
 		)
 		.sort(
 			(a: any, b: any) =>
 				b.keywordIdeaMetrics.avgMonthlySearches -
-				a.keywordIdeaMetrics.avgMonthlySearches
+				a.keywordIdeaMetrics.avgMonthlySearches,
 		)
 		.map((item: any) => {
 			return {
@@ -362,7 +339,7 @@ export const findKeywordInfoData = async (keywords: string[]): Promise<any> => {
 
 export const getTitleData = async (
 	topic: string,
-	primaryKeyword: string
+	primaryKeyword: string,
 ): Promise<any> => {
 	console.log(topic, primaryKeyword, 'topic, primaryKeyword');
 
@@ -384,7 +361,7 @@ export const getTitleData = async (
 				Authorization: `Bearer ${token}`,
 			},
 			httpsAgent,
-		}
+		},
 	);
 
 	if (response.status !== 200) {
@@ -399,29 +376,25 @@ export const getTitleData = async (
 export const getReferenceOutlineData = async (
 	title: string,
 	primaryKeyword: string,
-	threadId: string
+	threadId: string,
 ): Promise<any> => {
 	console.log(
 		title,
 		primaryKeyword,
 		threadId,
-		'topic, primaryKeyword, threadId'
+		'topic, primaryKeyword, threadId',
 	);
 
 	const API_KEY =
-		'b673f651123b57de00c25a4e0ba6bb242acccfd0419bbde14ea0e61e5b1e1294';
+		'99153026b11f83b06d4004187125160974147def6663d513216b51072171cc9f';
 	const query = title;
 
-	const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
-		query
-	)}&hl=en&gl=us&api_key=${API_KEY}`;
+	const url = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&hl=en&gl=us&api_key=${API_KEY}`;
 
 	try {
 		const response = await axios.get(url);
 
-		const links = response.data.organic_results.map(
-			(item: any) => item.link
-		);
+		const links = response.data.organic_results.map((item: any) => item.link);
 		// return links.slice(0, 5);
 		// const httpsAgentData = new https.Agent({
 		// 	rejectUnauthorized: false,
@@ -439,26 +412,20 @@ export const getReferenceOutlineData = async (
 				form.append('user_id', threadId);
 				form.append('urls', link);
 
-				const crawlResponse = await axios.post(
-					crawlApiUrl,
-					form,
-					{
-						headers: {
-							'Content-Type': 'multipart/form-data',
-							Authorization: `Bearer ${token}`,
-						},
-						httpsAgent: httpsAgentData,
-					}
-				);
+				const crawlResponse = await axios.post(crawlApiUrl, form, {
+					headers: {
+						'Content-Type': 'multipart/form-data',
+						Authorization: `Bearer ${token}`,
+					},
+					httpsAgent: httpsAgentData,
+				});
 
 				if (crawlResponse.status !== 200) {
-					throw new Error(
-						`Failed to fetch title: ${crawlResponse.statusText}`
-					);
+					throw new Error(`Failed to fetch title: ${crawlResponse.statusText}`);
 				}
 
 				return crawlResponse.data;
-			})
+			}),
 		);
 
 		const generateOutlineApiUrl = 'https://bloggr.ai:3013/process';
@@ -486,12 +453,13 @@ export const getReferenceOutlineData = async (
 					Authorization: `Bearer ${token}`,
 				},
 				httpsAgent: httpsAgentData,
-			}
+			},
 		);
 
 		updateThreadObject(threadId, {
-			outline: generateOutlineResponse.data.outline_generation
-				.outline_data.parsed_outline,
+			outline:
+				generateOutlineResponse.data.outline_generation.outline_data
+					.parsed_outline,
 			title: title,
 			primary_keywords: primaryKeyword,
 		});
@@ -503,13 +471,13 @@ export const getReferenceOutlineData = async (
 
 export const getRegeneratedOutlineData = async (
 	threadId: string,
-	feedback: string
+	feedback: string,
 ): Promise<any> => {
 	console.log(threadId, feedback, 'threadId, feedback');
 
 	const fileData = loadFileData();
 	const blogDraftObj = fileData.find(
-		(item: any) => item.thread_id === threadId
+		(item: any) => item.thread_id === threadId,
 	);
 
 	if (!blogDraftObj) {
@@ -519,8 +487,7 @@ export const getRegeneratedOutlineData = async (
 
 	// console.log(blogDraftObj, 'blogDraftObj');
 
-	const regenerateOutlineApiUrl =
-		'https://bloggr.ai:3013/regenerate-outline';
+	const regenerateOutlineApiUrl = 'https://bloggr.ai:3013/regenerate-outline';
 	const httpsAgentData = new https.Agent({
 		rejectUnauthorized: false,
 	});
@@ -544,20 +511,21 @@ export const getRegeneratedOutlineData = async (
 				'Content-Type': 'multipart/form-data',
 				Authorization: `Bearer ${token}`,
 			},
-		}
+		},
 	);
 
 	console.log(regenerateOutlineResponse.data, 'regenerateOutlineResponse');
 	updateThreadObject(threadId, {
-		outline: regenerateOutlineResponse.data.outline_generation
-			.outline_data.parsed_outline,
+		outline:
+			regenerateOutlineResponse.data.outline_generation.outline_data
+				.parsed_outline,
 	});
 	return regenerateOutlineResponse.data;
 };
 
 export const addInterlinkingData = async (
 	links: string[],
-	threadId: string
+	threadId: string,
 ): Promise<any> => {
 	try {
 		console.log(links, threadId, 'links, threadId');
@@ -590,7 +558,7 @@ export const createBlogData = async (threadId: string): Promise<any> => {
 
 	const fileData = loadFileData();
 	const blogDraftObj = fileData.find(
-		(item: any) => item.thread_id === threadId
+		(item: any) => item.thread_id === threadId,
 	);
 
 	if (!blogDraftObj) {
@@ -600,17 +568,13 @@ export const createBlogData = async (threadId: string): Promise<any> => {
 	// console.log(blogDraftObj, 'blogDraftObj');
 
 	try {
-		const response = await axios.post(
-			generateBlogApiUrl,
-			blogDraftObj,
-			{
-				httpsAgent: httpsAgentData,
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`,
-				},
-			}
-		);
+		const response = await axios.post(generateBlogApiUrl, blogDraftObj, {
+			httpsAgent: httpsAgentData,
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`,
+			},
+		});
 
 		updateThreadObject(threadId, { blog: response.data });
 
@@ -625,7 +589,7 @@ export const getBlogData = async (threadId: string): Promise<any> => {
 	console.log(threadId, 'threadId');
 	const fileData = loadFileData();
 	const blogDraftObj = fileData.find(
-		(item: any) => item.thread_id === threadId
+		(item: any) => item.thread_id === threadId,
 	);
 	return blogDraftObj.blog.blog_content;
 };
