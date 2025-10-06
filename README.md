@@ -13,7 +13,7 @@
 
 ## Installation Steps
 
-1. **Install Dependencies:**
+1. **Install Dependencies:-**
 
    ```bash
    pnpm install
