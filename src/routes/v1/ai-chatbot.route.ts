@@ -14,6 +14,10 @@ import {
 	setPrimarySecondaryKeyword,
 	findKeywordInfo,
 	getRegeneratedOutline,
+	getQuickModeOutlineHandler,
+	generateAutoKeywords,
+	generateAutoTitle,
+
 } from '../../controllers/chatbot/ai-chabot.controller';
 
 import express from 'express';
@@ -77,7 +81,11 @@ staticChatbotRouter.post(
 	'/assistants/actions/get_reference_outline',
 	getReferenceOutline
 );
-
+// ADD THIS NEW ROUTE (add it after get_reference_outline)
+staticChatbotRouter.post(
+	'/assistants/actions/get_quick_mode_outline',
+	getQuickModeOutlineHandler
+);
 // get regenerated outline
 staticChatbotRouter.post(
 	'/assistants/actions/get_regenerated_outline',
@@ -89,7 +97,16 @@ staticChatbotRouter.post(
 	'/assistants/actions/add_interlinking',
 	addInterlinking
 );
+staticChatbotRouter.post(
+  '/assistants/actions/generate_auto_keywords',
+  generateAutoKeywords
+);
 
+// Auto title selection (for mid-conversation auto-handling)
+staticChatbotRouter.post(
+  '/assistants/actions/generate_auto_title',
+  generateAutoTitle
+);
 // create blog
 staticChatbotRouter.post('/assistants/actions/create_blog', createBlog);
 

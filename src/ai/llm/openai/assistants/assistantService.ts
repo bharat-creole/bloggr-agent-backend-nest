@@ -74,6 +74,7 @@ const tools: any = [
 			required: ['contentType'],
 		},
 	},
+
 ];
 class assistantService {
 	private openai;
@@ -126,7 +127,8 @@ class assistantService {
 		});
 
 		const stream = this.openai.beta.threads.runs.stream(threadId, {
-			assistant_id: 'asst_kZeG0dLUN88S3JX26gSduAEH',
+			// assistant_id: 'asst_kZeG0dLUN88S3JX26gSduAEH',
+			assistant_id: 'asst_60wAlmqMuI0GcI5sgCYoTx7v',
 		});
 
 		for await (const chunk of stream) {

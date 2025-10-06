@@ -109,7 +109,7 @@ export const getPrimaryKeywordData = async (
 	try {
 		// Get the Rank data from Google Search
 		const API_KEY =
-			'b673f651123b57de00c25a4e0ba6bb242acccfd0419bbde14ea0e61e5b1e1294';
+			'243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
 		const query = keyword;
 
 		const getSerpApiUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(
@@ -401,16 +401,12 @@ export const getReferenceOutlineData = async (
 	primaryKeyword: string,
 	threadId: string
 ): Promise<any> => {
-	console.log(
-		title,
-		primaryKeyword,
-		threadId,
-		'topic, primaryKeyword, threadId'
-	);
+	console.log(title, primaryKeyword, threadId, 'topic, primaryKeyword, threadId');
 
-	const API_KEY =
-		'b673f651123b57de00c25a4e0ba6bb242acccfd0419bbde14ea0e61e5b1e1294';
-	const query = title;
+	const API_KEY = '243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
+	
+	// Better query: Add "article" or "blog" to get actual content pages instead of homepages
+	const query = `${primaryKeyword} article blog guide`;
 
 	const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
 		query
@@ -419,55 +415,144 @@ export const getReferenceOutlineData = async (
 	try {
 		const response = await axios.get(url);
 
-		const links = response.data.organic_results.map(
-			(item: any) => item.link
-		);
-		// return links.slice(0, 5);
-		// const httpsAgentData = new https.Agent({
-		// 	rejectUnauthorized: false,
-		// });
-		const crawlResults = Promise.all(
-			links.slice(0, 5).map(async (link: string) => {
-				console.log(link, 'link');
-				const crawlApiUrl = 'https://bloggr.ai:3013/crawl';
+		if (!response.data.organic_results || response.data.organic_results.length === 0) {
+			console.log('No search results found, falling back to quick mode');
+			return await getQuickModeOutline(title, threadId);
+		}
 
-				const httpsAgentData = new https.Agent({
-					rejectUnauthorized: false,
-				});
+		// Filter out problematic domains AND homepages
+		const problematicDomains = [
+			'medium.com/@',
+			'sciencedirect.com',
+			'researchgate.net',
+			'jstor.org',
+			'academia.edu',
+			'springer.com',
+			'ieee.org'
+		];
 
-				const form = new FormData();
-				form.append('user_id', threadId);
-				form.append('urls', link);
+		const homepagePatterns = [
+			/^https?:\/\/[^\/]+\/?$/,           // Matches domain.com or domain.com/
+			/^https?:\/\/www\.[^\/]+\/?$/,      // Matches www.domain.com/
+			/discord\.com\/invite/,              // Discord invites
+			/finance\.yahoo\.com\/quote/,        // Stock quotes
+			/linkedin\.com\/company/,            // Company pages
+			/twitter\.com\/[^\/]+\/?$/,         // Twitter profiles (not tweets)
+			/facebook\.com\/[^\/]+\/?$/,        // Facebook pages
+			/instagram\.com\/[^\/]+\/?$/,       // Instagram profiles
+			/github\.com\/[^\/]+\/?$/,          // GitHub repos (not specific files)
+			/\/login/,                           // Login pages
+			/\/signup/,                          // Signup pages
+			/\/register/,                        // Register pages
+		];
 
-				const crawlResponse = await axios.post(
-					crawlApiUrl,
-					form,
-					{
-						headers: {
-							'Content-Type': 'multipart/form-data',
-							Authorization: `Bearer ${token}`,
-						},
-						httpsAgent: httpsAgentData,
-					}
-				);
-
-				if (crawlResponse.status !== 200) {
-					throw new Error(
-						`Failed to fetch title: ${crawlResponse.statusText}`
-					);
+		const links = response.data.organic_results
+			.filter((item: any) => {
+				const link = item.link.toLowerCase();
+				
+				// Filter out problematic domains
+				if (problematicDomains.some(domain => link.includes(domain))) {
+					console.log('Filtering out problematic domain:', link);
+					return false;
+				}
+				
+				// Filter out homepages and non-article pages
+				if (homepagePatterns.some(pattern => pattern.test(link))) {
+					console.log('Filtering out homepage/non-article:', link);
+					return false;
 				}
 
-				return crawlResponse.data;
+				// Filter out PDFs (they're slow to crawl)
+				if (link.endsWith('.pdf')) {
+					console.log('Filtering out PDF:', link);
+					return false;
+				}
+				
+				return true;
+			})
+			.map((item: any) => item.link)
+			.slice(0, 8); // Get 8 links since we'll filter more and some might fail
+
+		console.log(`Found ${links.length} potential URLs to crawl:`, links);
+
+		// If we don't have enough good links, fall back immediately
+		if (links.length < 3) {
+			console.log('Not enough quality links found, falling back to quick mode');
+			return await getQuickModeOutline(title, threadId);
+		}
+
+		// Crawl with Promise.allSettled to handle individual failures
+		console.log('Starting to crawl URLs...');
+		const crawlStartTime = Date.now();
+
+		const crawlResults = await Promise.allSettled(
+			links.map(async (link: string, index: number) => {
+				try {
+					console.log(`[${index + 1}/${links.length}] Crawling:`, link);
+					const crawlApiUrl = 'https://bloggr.ai:3013/crawl';
+
+					const httpsAgentData = new https.Agent({
+						rejectUnauthorized: false,
+					});
+
+					const form = new FormData();
+					form.append('user_id', threadId);
+					form.append('urls', link);
+
+					const linkStartTime = Date.now();
+					const crawlResponse = await axios.post(
+						crawlApiUrl,
+						form,
+						{
+							headers: {
+								'Content-Type': 'multipart/form-data',
+								Authorization: `Bearer ${token}`,
+							},
+							httpsAgent: httpsAgentData,
+							timeout: 60000, // 60 seconds per URL
+						}
+					);
+
+					const linkDuration = Date.now() - linkStartTime;
+
+					if (crawlResponse.status !== 200) {
+						console.error(`[${index + 1}] Failed with status ${crawlResponse.status}:`, link);
+						return null;
+					}
+
+					console.log(`[${index + 1}] Successfully crawled in ${linkDuration}ms:`, link);
+					return crawlResponse.data;
+
+				} catch (error: any) {
+					const errorMsg = error.code === 'ECONNABORTED' ? 'timeout' : error.message;
+					console.error(`[${index + 1}] Error crawling ${link}:`, errorMsg);
+					return null;
+				}
 			})
 		);
+
+		const crawlTotalTime = Date.now() - crawlStartTime;
+		console.log(`Total crawling time: ${crawlTotalTime}ms`);
+
+		// Count successful crawls
+		const successfulCrawls = crawlResults.filter(
+			result => result.status === 'fulfilled' && result.value !== null
+		).length;
+
+		console.log(`Successfully crawled ${successfulCrawls} out of ${links.length} URLs`);
+
+		// If less than 2 successful crawls, fall back to quick mode
+		if (successfulCrawls < 2) {
+			console.log('Not enough successful crawls, falling back to quick mode');
+			return await getQuickModeOutline(title, threadId);
+		}
+
+		console.log('Crawling complete, generating outline with crawled data...');
 
 		const generateOutlineApiUrl = 'https://bloggr.ai:3013/process';
 		const httpsAgentData = new https.Agent({
 			rejectUnauthorized: false,
 		});
-
-		// Wait for all crawlResults to complete before hitting the generate outline API
-		await crawlResults;
 
 		const formProcess = new FormData();
 		formProcess.append('user_id', threadId);
@@ -477,6 +562,7 @@ export const getReferenceOutlineData = async (
 		formProcess.append('include_crawled', 'true');
 		formProcess.append('secondary_keywords', '');
 
+		const outlineStartTime = Date.now();
 		const generateOutlineResponse = await axios.post(
 			generateOutlineApiUrl,
 			formProcess,
@@ -486,20 +572,321 @@ export const getReferenceOutlineData = async (
 					Authorization: `Bearer ${token}`,
 				},
 				httpsAgent: httpsAgentData,
+				timeout: 120000, // 2 minutes for outline generation
 			}
 		);
 
+		const outlineDuration = Date.now() - outlineStartTime;
+		console.log(`Outline generation completed in ${outlineDuration}ms`);
+
+		// Check if the outline generation was successful
+		const outlineData = generateOutlineResponse.data?.outline_generation?.outline_data;
+
+		if (
+			!outlineData ||
+			outlineData.error ||
+			outlineData.message === 'Insufficient or irrelevant context' ||
+			!outlineData.parsed_outline
+		) {
+			console.log('Outline generation failed with crawled data, falling back to quick mode');
+			console.log('Error details:', outlineData?.error || outlineData?.message);
+			return await getQuickModeOutline(title, threadId);
+		}
+
+		// Success - store and return
 		updateThreadObject(threadId, {
-			outline: generateOutlineResponse.data.outline_generation
-				.outline_data.parsed_outline,
+			outline: outlineData.parsed_outline,
 			title: title,
 			primary_keywords: primaryKeyword,
 		});
+
+		console.log('Outline generated and stored successfully with web research');
 		return generateOutlineResponse.data;
+
 	} catch (error: any) {
-		console.error('ERROR:', error);
+		console.error('ERROR in getReferenceOutlineData:', error.message);
+		console.error('Stack trace:', error.stack);
+		
+		// Fall back to quick mode on any error
+		console.log('Falling back to quick mode due to error');
+		try {
+			return await getQuickModeOutline(title, threadId);
+		} catch (fallbackError: any) {
+			console.error('Fallback to quick mode also failed:', fallbackError.message);
+			throw new Error('Unable to generate outline with web research or AI knowledge');
+		}
 	}
 };
+function safeJSONParse(str: string, fallback: any = null) {
+  try {
+    // Remove leading/trailing whitespace and code block markers
+    let cleaned = str.trim();
+    // Remove ```json and ```
+    cleaned = cleaned.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('safeJSONParse error:', error, '\nRaw input:', str);
+    return fallback;
+  }
+}
+
+// Add these two functions to your chatbotService.ts
+
+// Replace existing generateAutoKeywordsData function
+export const generateAutoKeywordsData = async (topic: string, country: string) => {
+	try {
+		console.log(`Auto-generating keywords using same research process for: ${topic}, ${country}`);
+		
+		const allKeywords = await getPrimaryKeywordData(topic, country, `Keywords related to: ${topic}`);
+
+		if (!allKeywords || allKeywords.length === 0) {
+			console.warn('⚠️ No keywords from research, falling back to OpenAI');
+			throw new Error('No keywords found from research');
+		}
+
+		console.log(`Found ${allKeywords.length} keywords from research`);
+
+		// ✅ CONVERT TO NUMBERS FOR FILTERING
+		const validKeywords = allKeywords.filter((k: any) => {
+			const competition = Number(k.competition || 999);
+			const volume = Number(k.volume || 0);
+			return competition < 50 && volume >= 100;
+		});
+		
+		if (validKeywords.length === 0) {
+			console.warn('⚠️ No valid keywords after filtering, falling back to OpenAI');
+			throw new Error('No valid keywords with acceptable competition found');
+		}
+
+		// ✅ CONVERT TO NUMBERS FOR SORTING
+		const sortedByVolume = validKeywords.sort((a: any, b: any) => {
+			const aVolume = Number(a.volume || 0);
+			const bVolume = Number(b.volume || 0);
+			return bVolume - aVolume;
+		});
+		
+		const primary = sortedByVolume[0];
+
+		const secondary = sortedByVolume
+			.filter((k: any) => k.keyword !== primary.keyword)
+			.slice(0, 10)
+			.map((k: any) => k.keyword);
+
+		console.log('✅ Auto-selected primary:', primary.keyword);
+		console.log('✅ Auto-selected secondary:', secondary);
+
+		return {
+			primary: primary.keyword,
+			secondary: secondary,
+			primaryVolume: Number(primary.volume),
+			primaryCompetition: Number(primary.competition),
+			totalOptionsFound: allKeywords.length
+		};
+		
+	} catch (error: any) {
+		console.error('❌ Error in generateAutoKeywordsData:', error.message);
+		console.log('🔄 Falling back to OpenAI-only keyword generation');
+		
+		const result = await openaiService.generateAutoKeywords(topic, country);
+		
+		if (!result) {
+			console.warn('⚠️ OpenAI generateAutoKeywords returned null, using default fallback');
+			return {
+				primary: topic.toLowerCase(),
+				secondary: [`${topic} guide`, `${topic} tips`, `${topic} best practices`],
+				fallback: true
+			};
+		}
+		
+		const parsed = safeJSONParse(result, {
+			primary: topic.toLowerCase(),
+			secondary: [`${topic} guide`, `${topic} tips`, `${topic} best practices`]
+		});
+
+		return {
+			primary: parsed.primary,
+			secondary: parsed.secondary,
+			fallback: true
+		};
+	}
+};
+
+// Replace existing generateAutoTitleData function
+export const generateAutoTitleData = async (topic: string, primaryKeyword: string) => {
+  try {
+    console.log(`Auto-generating title using same process for: ${topic}, ${primaryKeyword}`);
+    
+    // USE THE SAME FUNCTION AS GUIDED MODE - this calls external API
+    const allTitles = await getTitleData(topic, primaryKeyword);
+
+    if (!allTitles || allTitles.length === 0) {
+      throw new Error('No titles generated');
+    }
+
+    console.log(`Generated ${allTitles.length} title options`);
+
+    // Auto-select first title (the API typically returns best one first)
+    const selectedTitle = allTitles[0];
+
+    console.log('Auto-selected title:', selectedTitle);
+
+    return {
+      title: selectedTitle,
+      totalOptionsGenerated: allTitles.length
+    };
+  } catch (error: any) {
+    console.error('Error in generateAutoTitleData:', error);
+    
+    // Fallback to OpenAI-only if API fails
+    console.log('Falling back to OpenAI-only title generation');
+    const result = await openaiService.generateAutoTitle(topic, primaryKeyword);
+    
+    return {
+      title: result || `The Complete Guide to ${topic}: Everything You Need to Know`,
+      fallback: true
+    };
+  }
+};
+
+
+
+// Make sure getQuickModeOutline exists and is exported
+export const getQuickModeOutline = async (
+	topic: string,
+	threadId: string
+): Promise<any> => {
+	console.log('========================================');
+	console.log('QUICK MODE: Starting outline generation');
+	console.log('Topic:', topic);
+	console.log('ThreadId received:', threadId);
+	console.log('========================================');
+	
+	try {
+		// Step 1: Auto-generate title from topic
+		const title = `Understanding ${topic.charAt(0).toUpperCase() + topic.slice(1)}: A Complete Guide`;
+		console.log('Generated title:', title);
+		
+		// Step 2: Use topic as primary keyword
+		const primaryKeyword = topic.toLowerCase();
+		console.log('Primary keyword:', primaryKeyword);
+		
+		// Step 3: Generate outline using OpenAI (no external API)
+		console.log('Generating outline with OpenAI...');
+		const outlineContent = await openaiService.generateOutlineFromTopic(
+			topic,
+			title,
+			primaryKeyword
+		);
+
+		console.log('Outline generated successfully');
+		console.log('Outline length:', outlineContent.length, 'characters');
+
+		// Step 4: Prepare data object
+		const dataToSave = {
+			outline: outlineContent,
+			title: title,
+			primary_keywords: primaryKeyword,
+			secondary_keywords: '',
+			links: [],
+			brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+			aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+			model: 'GPT-o1-mini',
+			language: 'English',
+			user_id: threadId,
+		};
+
+		console.log('Saving data to threadId:', threadId);
+		const savedData = updateThreadObject(threadId, dataToSave);
+		console.log('Data saved successfully. Saved object has thread_id:', savedData.thread_id);
+
+		// Verify the data was actually saved
+		const fileData = loadFileData();
+		const verifyData = fileData.find((item: any) => item.thread_id === threadId);
+		if (verifyData) {
+			console.log('VERIFICATION: Data found in file with thread_id:', verifyData.thread_id);
+			console.log('VERIFICATION: Has outline:', !!verifyData.outline);
+			console.log('VERIFICATION: Has title:', !!verifyData.title);
+		} else {
+			console.error('VERIFICATION FAILED: Data NOT found in file for thread_id:', threadId);
+			console.error('Available thread_ids in file:', fileData.map((item: any) => item.thread_id));
+		}
+
+		console.log('========================================');
+		console.log('QUICK MODE: Outline generation complete');
+		console.log('========================================');
+
+		// Return in the same format as the external API for consistency
+		return {
+			success: true,
+			outline_generation: {
+				outline_data: {
+					parsed_outline: outlineContent
+				}
+			},
+			thread_id: threadId
+		};
+	} catch (error: any) {
+		console.error('========================================');
+		console.error('ERROR in Quick Mode:', error);
+		console.error('ThreadId was:', threadId);
+		console.error('========================================');
+		throw error;
+	}
+};
+
+
+
+// export const getQuickModeOutline = async (
+// 	topic: string,
+// 	threadId: string
+// ): Promise<any> => {
+// 	console.log('QUICK MODE: Generating outline from topic only');
+
+// 	try {
+// 		// Step 1: Auto-generate title from topic
+// 		const title = `Understanding ${topic.charAt(0).toUpperCase() + topic.slice(1)}: A Complete Guide`;
+
+// 		// Step 2: Use topic as primary keyword
+// 		const primaryKeyword = topic.toLowerCase();
+
+// 		// Step 3: Generate outline using OpenAI (no external API)
+// 		console.log('Generating outline with OpenAI...');
+// 		const outlineContent = await openaiService.generateOutlineFromTopic(
+// 			topic,
+// 			title,
+// 			primaryKeyword
+// 		);
+
+// 		console.log('Outline generated successfully');
+
+// 		// Step 4: Store data for create_blog()
+// 		updateThreadObject(threadId, {
+// 			outline: outlineContent,
+// 			title: title,
+// 			primary_keywords: primaryKeyword,
+// 			secondary_keywords: '',
+// 			links: [],
+// 			brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+// 			aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+// 			model: 'GPT-o1-mini',
+// 			language: 'English',
+// 			user_id: threadId,
+// 		});
+
+// 		// Return in the same format as the external API for consistency
+// 		return {
+// 			success: true,
+// 			outline_generation: {
+// 				outline_data: {
+// 					parsed_outline: outlineContent
+// 				}
+// 			}
+// 		};
+// 	} catch (error: any) {
+// 		console.error('ERROR in Quick Mode:', error);
+// 		throw error;
+// 	}
+// };
 
 export const getRegeneratedOutlineData = async (
 	threadId: string,
@@ -511,6 +898,7 @@ export const getRegeneratedOutlineData = async (
 	const blogDraftObj = fileData.find(
 		(item: any) => item.thread_id === threadId
 	);
+	console.log("blogdrafrt obj:", blogDraftObj);
 
 	if (!blogDraftObj) {
 		console.error(`No blog draft found for thread_id: ${threadId}`);
@@ -555,6 +943,13 @@ export const getRegeneratedOutlineData = async (
 	return regenerateOutlineResponse.data;
 };
 
+export const show_interlinking_ui = async (): Promise<any> => {
+	console.log('Triggered show_interlinking_ui');
+	return {
+		success: true,
+		message: 'UI component displayed for interlinking input',
+	};
+};
 export const addInterlinkingData = async (
 	links: string[],
 	threadId: string
@@ -582,7 +977,6 @@ export const addInterlinkingData = async (
 };
 
 export const createBlogData = async (threadId: string): Promise<any> => {
-	console.log(threadId, 'threadId');
 	const generateBlogApiUrl = 'https://bloggr.ai:3013/generate_blog';
 	const httpsAgentData = new https.Agent({
 		rejectUnauthorized: false,
@@ -597,7 +991,7 @@ export const createBlogData = async (threadId: string): Promise<any> => {
 		console.error(`No blog draft found for thread_id: ${threadId}`);
 		return { error: 'No blog draft found for the provided threadId.' };
 	}
-	// console.log(blogDraftObj, 'blogDraftObj');
+	console.log(blogDraftObj, 'blogDraftObj');
 
 	try {
 		const response = await axios.post(

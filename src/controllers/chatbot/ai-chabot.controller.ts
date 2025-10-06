@@ -1,15 +1,23 @@
 import assistantService from '../../ai/llm/openai/assistants/assistantService';
+const https = require('https');
+const FormData = require('form-data');
+import axios from 'axios';
+
 import {
 	addInterlinkingData,
 	chatbotService,
 	createBlogData,
 	findKeywordInfoData,
+	getQuickModeOutline,
 	getBlogData,
 	getPrimaryKeywordData,
 	getReferenceOutlineData,
 	getRegeneratedOutlineData,
 	getTitleData,
 	setPrimarySecondaryKeywordData,
+	generateAutoKeywordsData,
+  generateAutoTitleData,
+	show_interlinking_ui as show_interlinking_uiService,
 } from '../../ai/chatbot/chatbotService';
 import type { NextFunction, Request, Response } from 'express';
 const assistantservice = new assistantService();
@@ -193,6 +201,89 @@ export const getReferenceOutline = async (
 		next(err);
 	}
 };
+export const getQuickModeOutlineHandler = async (
+	req: Request,
+	res: Response
+): Promise<any> => {
+	try {
+		const { topic, thread_id } = req.body;
+		
+		if (!topic || !thread_id) {
+			return res.status(400).json({ 
+				error: 'topic and thread_id are required' 
+			});
+		}
+
+		const result = await getQuickModeOutline(topic, thread_id);
+		return res.status(200).json(result);
+	} catch (error: any) {
+		console.error('Error in quick mode outline:', error);
+		return res.status(500).json({ 
+			error: 'Failed to generate quick mode outline' 
+		});
+	}
+};
+export const generateAutoKeywords = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { topic, country } = req.body;
+    if (!topic) {
+      return res.status(400).json({ error: 'topic is required' });
+    }
+    
+    const targetCountry = country || 'United States';
+    
+    console.log(`Starting generateAutoKeywords for topic: ${topic}, country: ${targetCountry}`);
+    
+    const result = await generateAutoKeywordsData(topic, targetCountry);
+    
+    return res.status(200).json({
+      message: 'success',
+      data: result,
+    });
+  } catch (err: any) {
+    console.error('Error in generateAutoKeywords:', err);
+    return res.status(500).json({
+      error: 'Failed to generate keywords automatically',
+      details: err.message
+    });
+  }
+};
+
+export const generateAutoTitle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { topic, primaryKeyword } = req.body;
+    if (!topic) {
+      return res.status(400).json({ error: 'topic is required' });
+    }
+    
+    const keywordToUse = primaryKeyword || topic;
+    
+    console.log(`Starting generateAutoTitle for topic: ${topic}, primaryKeyword: ${keywordToUse}`);
+    const result = await generateAutoTitleData(topic, keywordToUse);
+    
+    return res.status(200).json({
+      message: 'success',
+      data: result,
+    });
+  } catch (err: any) {
+    console.error('Error in generateAutoTitle:', err);
+    return res.status(200).json({
+      message: 'partial_success',
+      data: {
+        title: `The Complete Guide to ${req.body.topic || 'This Topic'}`
+      },
+      error: err.message
+    });
+  }
+};
 
 export const getRegeneratedOutline = async (
 	req: Request,
@@ -214,7 +305,6 @@ export const getRegeneratedOutline = async (
 		next(err);
 	}
 };
-
 export const addInterlinking = async (
 	req: Request,
 	res: Response,
@@ -250,6 +340,8 @@ export const createBlog = async (
 		return res.status(200).json({
 			message: 'success',
 			data: blog,
+			isBlog: true,       
+      type: 'blog',  
 		});
 	} catch (err) {
 		console.error('Error ', err);
