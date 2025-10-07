@@ -47,6 +47,7 @@
 		"winston": "^3.17.0"
 	},
 	"dependencies": {
+		"@perplexity-ai/perplexity_ai": "^0.8.0",
 		"@prisma/client": "^6.3.1",
 		"@types/node-cron": "^3.0.11",
 		"axios": "^1.11.0",

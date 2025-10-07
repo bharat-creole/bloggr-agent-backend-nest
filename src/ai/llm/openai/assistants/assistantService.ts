@@ -74,7 +74,6 @@ const tools: any = [
 			required: ['contentType'],
 		},
 	},
-
 ];
 class assistantService {
 	private openai;

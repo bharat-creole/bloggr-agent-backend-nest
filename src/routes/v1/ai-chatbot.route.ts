@@ -17,7 +17,7 @@ import {
 	getQuickModeOutlineHandler,
 	generateAutoKeywords,
 	generateAutoTitle,
-
+	getPerplexityCompletion,
 } from '../../controllers/chatbot/ai-chabot.controller';
 
 import express from 'express';
@@ -98,19 +98,25 @@ staticChatbotRouter.post(
 	addInterlinking
 );
 staticChatbotRouter.post(
-  '/assistants/actions/generate_auto_keywords',
-  generateAutoKeywords
+	'/assistants/actions/generate_auto_keywords',
+	generateAutoKeywords
 );
 
 // Auto title selection (for mid-conversation auto-handling)
 staticChatbotRouter.post(
-  '/assistants/actions/generate_auto_title',
-  generateAutoTitle
+	'/assistants/actions/generate_auto_title',
+	generateAutoTitle
 );
 // create blog
 staticChatbotRouter.post('/assistants/actions/create_blog', createBlog);
 
 // get blog
 staticChatbotRouter.post('/assistants/actions/get_blog', getBlog);
+
+// Perplexity completion
+staticChatbotRouter.post(
+	'/assistants/actions/perplexity_completion',
+	getPerplexityCompletion
+);
 
 export default staticChatbotRouter;
