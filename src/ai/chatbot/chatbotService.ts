@@ -252,9 +252,18 @@ export const getPrimaryKeywordData = async (
 			filterKeywordsWithReferenceMeaningArray,
 			'filterKeywordsWithReferenceMeaningArray'
 		);
+// ✅ FIX: Actually return this data!
+if (filterKeywordsWithReferenceMeaningArray && filterKeywordsWithReferenceMeaningArray.length > 0) {
+	console.log(`✅ Returning ${filterKeywordsWithReferenceMeaningArray.length} keywords from filter`);
+	return filterKeywordsWithReferenceMeaningArray; // ← ADD THIS LINE
+}
 
-		console.log(finalKeywordsArray.length, 'finalKeywordsArray');
-		return finalKeywordsArray;
+// If filter returned nothing, return whatever we have in finalKeywordsArray
+console.log(finalKeywordsArray.length, 'finalKeywordsArray');
+
+if (finalKeywordsArray.length > 0) {
+	return finalKeywordsArray;
+}
 
 		// __________________________________________________________
 		// const apiUrl = 'https://bloggr.ai:3011/getKeywords';
@@ -404,7 +413,7 @@ export const getReferenceOutlineData = async (
 	console.log(title, primaryKeyword, threadId, 'topic, primaryKeyword, threadId');
 
 	const API_KEY = '243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
-	
+
 	// Better query: Add "article" or "blog" to get actual content pages instead of homepages
 	const query = `${primaryKeyword} article blog guide`;
 
@@ -449,13 +458,13 @@ export const getReferenceOutlineData = async (
 		const links = response.data.organic_results
 			.filter((item: any) => {
 				const link = item.link.toLowerCase();
-				
+
 				// Filter out problematic domains
 				if (problematicDomains.some(domain => link.includes(domain))) {
 					console.log('Filtering out problematic domain:', link);
 					return false;
 				}
-				
+
 				// Filter out homepages and non-article pages
 				if (homepagePatterns.some(pattern => pattern.test(link))) {
 					console.log('Filtering out homepage/non-article:', link);
@@ -467,7 +476,7 @@ export const getReferenceOutlineData = async (
 					console.log('Filtering out PDF:', link);
 					return false;
 				}
-				
+
 				return true;
 			})
 			.map((item: any) => item.link)
@@ -575,12 +584,14 @@ export const getReferenceOutlineData = async (
 				timeout: 120000, // 2 minutes for outline generation
 			}
 		);
+		console.log("outline:", generateOutlineApiUrl);
 
 		const outlineDuration = Date.now() - outlineStartTime;
 		console.log(`Outline generation completed in ${outlineDuration}ms`);
 
 		// Check if the outline generation was successful
 		const outlineData = generateOutlineResponse.data?.outline_generation?.outline_data;
+		console.log(outlineData, "jhdysgfjkhg")
 
 		if (
 			!outlineData ||
@@ -606,7 +617,7 @@ export const getReferenceOutlineData = async (
 	} catch (error: any) {
 		console.error('ERROR in getReferenceOutlineData:', error.message);
 		console.error('Stack trace:', error.stack);
-		
+
 		// Fall back to quick mode on any error
 		console.log('Falling back to quick mode due to error');
 		try {
@@ -618,16 +629,16 @@ export const getReferenceOutlineData = async (
 	}
 };
 function safeJSONParse(str: string, fallback: any = null) {
-  try {
-    // Remove leading/trailing whitespace and code block markers
-    let cleaned = str.trim();
-    // Remove ```json and ```
-    cleaned = cleaned.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-    return JSON.parse(cleaned);
-  } catch (error) {
-    console.error('safeJSONParse error:', error, '\nRaw input:', str);
-    return fallback;
-  }
+	try {
+		// Remove leading/trailing whitespace and code block markers
+		let cleaned = str.trim();
+		// Remove ```json and ```
+		cleaned = cleaned.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+		return JSON.parse(cleaned);
+	} catch (error) {
+		console.error('safeJSONParse error:', error, '\nRaw input:', str);
+		return fallback;
+	}
 }
 
 // Add these two functions to your chatbotService.ts
@@ -636,7 +647,7 @@ function safeJSONParse(str: string, fallback: any = null) {
 export const generateAutoKeywordsData = async (topic: string, country: string) => {
 	try {
 		console.log(`Auto-generating keywords using same research process for: ${topic}, ${country}`);
-		
+
 		const allKeywords = await getPrimaryKeywordData(topic, country, `Keywords related to: ${topic}`);
 
 		if (!allKeywords || allKeywords.length === 0) {
@@ -652,7 +663,7 @@ export const generateAutoKeywordsData = async (topic: string, country: string) =
 			const volume = Number(k.volume || 0);
 			return competition < 50 && volume >= 100;
 		});
-		
+
 		if (validKeywords.length === 0) {
 			console.warn('⚠️ No valid keywords after filtering, falling back to OpenAI');
 			throw new Error('No valid keywords with acceptable competition found');
@@ -664,7 +675,7 @@ export const generateAutoKeywordsData = async (topic: string, country: string) =
 			const bVolume = Number(b.volume || 0);
 			return bVolume - aVolume;
 		});
-		
+
 		const primary = sortedByVolume[0];
 
 		const secondary = sortedByVolume
@@ -682,13 +693,13 @@ export const generateAutoKeywordsData = async (topic: string, country: string) =
 			primaryCompetition: Number(primary.competition),
 			totalOptionsFound: allKeywords.length
 		};
-		
+
 	} catch (error: any) {
 		console.error('❌ Error in generateAutoKeywordsData:', error.message);
 		console.log('🔄 Falling back to OpenAI-only keyword generation');
-		
+
 		const result = await openaiService.generateAutoKeywords(topic, country);
-		
+
 		if (!result) {
 			console.warn('⚠️ OpenAI generateAutoKeywords returned null, using default fallback');
 			return {
@@ -697,7 +708,7 @@ export const generateAutoKeywordsData = async (topic: string, country: string) =
 				fallback: true
 			};
 		}
-		
+
 		const parsed = safeJSONParse(result, {
 			primary: topic.toLowerCase(),
 			secondary: [`${topic} guide`, `${topic} tips`, `${topic} best practices`]
@@ -713,39 +724,39 @@ export const generateAutoKeywordsData = async (topic: string, country: string) =
 
 // Replace existing generateAutoTitleData function
 export const generateAutoTitleData = async (topic: string, primaryKeyword: string) => {
-  try {
-    console.log(`Auto-generating title using same process for: ${topic}, ${primaryKeyword}`);
-    
-    // USE THE SAME FUNCTION AS GUIDED MODE - this calls external API
-    const allTitles = await getTitleData(topic, primaryKeyword);
+	try {
+		console.log(`Auto-generating title using same process for: ${topic}, ${primaryKeyword}`);
 
-    if (!allTitles || allTitles.length === 0) {
-      throw new Error('No titles generated');
-    }
+		// USE THE SAME FUNCTION AS GUIDED MODE - this calls external API
+		const allTitles = await getTitleData(topic, primaryKeyword);
 
-    console.log(`Generated ${allTitles.length} title options`);
+		if (!allTitles || allTitles.length === 0) {
+			throw new Error('No titles generated');
+		}
 
-    // Auto-select first title (the API typically returns best one first)
-    const selectedTitle = allTitles[0];
+		console.log(`Generated ${allTitles.length} title options`);
 
-    console.log('Auto-selected title:', selectedTitle);
+		// Auto-select first title (the API typically returns best one first)
+		const selectedTitle = allTitles[0];
 
-    return {
-      title: selectedTitle,
-      totalOptionsGenerated: allTitles.length
-    };
-  } catch (error: any) {
-    console.error('Error in generateAutoTitleData:', error);
-    
-    // Fallback to OpenAI-only if API fails
-    console.log('Falling back to OpenAI-only title generation');
-    const result = await openaiService.generateAutoTitle(topic, primaryKeyword);
-    
-    return {
-      title: result || `The Complete Guide to ${topic}: Everything You Need to Know`,
-      fallback: true
-    };
-  }
+		console.log('Auto-selected title:', selectedTitle);
+
+		return {
+			title: selectedTitle,
+			totalOptionsGenerated: allTitles.length
+		};
+	} catch (error: any) {
+		console.error('Error in generateAutoTitleData:', error);
+
+		// Fallback to OpenAI-only if API fails
+		console.log('Falling back to OpenAI-only title generation');
+		const result = await openaiService.generateAutoTitle(topic, primaryKeyword);
+
+		return {
+			title: result || `The Complete Guide to ${topic}: Everything You Need to Know`,
+			fallback: true
+		};
+	}
 };
 
 
@@ -756,75 +767,322 @@ export const getQuickModeOutline = async (
 	threadId: string
 ): Promise<any> => {
 	console.log('========================================');
-	console.log('QUICK MODE: Starting outline generation');
+	console.log('QUICK MODE WITH FULL RESEARCH: Starting outline generation');
 	console.log('Topic:', topic);
 	console.log('ThreadId received:', threadId);
 	console.log('========================================');
 	
 	try {
-		// Step 1: Auto-generate title from topic
-		const title = `Understanding ${topic.charAt(0).toUpperCase() + topic.slice(1)}: A Complete Guide`;
-		console.log('Generated title:', title);
+		// ============================================================
+		// STEP 1: KEYWORD RESEARCH (using same API as guided mode)
+		// ============================================================
+		console.log('🔍 Step 1: Researching keywords with full API...');
+		let primaryKeyword = topic.toLowerCase(); // fallback
+		let secondaryKeywords: string[] = [];
 		
-		// Step 2: Use topic as primary keyword
-		const primaryKeyword = topic.toLowerCase();
-		console.log('Primary keyword:', primaryKeyword);
+		try {
+			const keywordData = await generateAutoKeywordsData(topic, 'United States');
+			primaryKeyword = keywordData.primary;
+			secondaryKeywords = keywordData.secondary;
+			
+			console.log('✅ Keyword research complete');
+			console.log('   Primary:', primaryKeyword);
+			console.log('   Secondary:', secondaryKeywords.join(', '));
+		} catch (keywordError: any) {
+			console.warn('⚠️ Keyword research failed, using topic as keyword:', keywordError.message);
+			primaryKeyword = topic.toLowerCase();
+			secondaryKeywords = [`${topic} guide`, `${topic} tips`, `best ${topic}`];
+		}
 		
-		// Step 3: Generate outline using OpenAI (no external API)
-		console.log('Generating outline with OpenAI...');
-		const outlineContent = await openaiService.generateOutlineFromTopic(
-			topic,
-			title,
-			primaryKeyword
-		);
+		// ============================================================
+		// STEP 2: GENERATE TITLE (using researched keyword)
+		// ============================================================
+		console.log('📝 Step 2: Generating title with researched keyword...');
+		let title = `Understanding ${topic.charAt(0).toUpperCase() + topic.slice(1)}: A Complete Guide`; // fallback
+		
+		try {
+			const titleData = await generateAutoTitleData(topic, primaryKeyword);
+			title = titleData.title;
+			console.log('✅ Title generated:', title);
+		} catch (titleError: any) {
+			console.warn('⚠️ Title generation failed, using default:', titleError.message);
+		}
+		
+		// ============================================================
+		// STEP 3: WEB CRAWLING RESEARCH
+		// ============================================================
+		console.log('🌐 Step 3: Starting web crawling research...');
+		
+		const API_KEY = '243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
+		const query = `${primaryKeyword} article blog guide`;
+		const url = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&hl=en&gl=us&api_key=${API_KEY}`;
 
-		console.log('Outline generated successfully');
-		console.log('Outline length:', outlineContent.length, 'characters');
+		let crawlSuccessful = false;
 
-		// Step 4: Prepare data object
-		const dataToSave = {
-			outline: outlineContent,
-			title: title,
-			primary_keywords: primaryKeyword,
-			secondary_keywords: '',
-			links: [],
-			brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
-			aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
-			model: 'GPT-o1-mini',
-			language: 'English',
-			user_id: threadId,
-		};
+		try {
+			console.log('Searching for relevant articles...');
+			const response = await axios.get(url);
 
-		console.log('Saving data to threadId:', threadId);
-		const savedData = updateThreadObject(threadId, dataToSave);
-		console.log('Data saved successfully. Saved object has thread_id:', savedData.thread_id);
+			if (response.data.organic_results && response.data.organic_results.length > 0) {
+				// Filter problematic domains and homepages
+				const problematicDomains = [
+					'medium.com/@',
+					'sciencedirect.com',
+					'researchgate.net',
+					'jstor.org',
+					'academia.edu',
+					'springer.com',
+					'ieee.org'
+				];
 
-		// Verify the data was actually saved
-		const fileData = loadFileData();
-		const verifyData = fileData.find((item: any) => item.thread_id === threadId);
-		if (verifyData) {
-			console.log('VERIFICATION: Data found in file with thread_id:', verifyData.thread_id);
-			console.log('VERIFICATION: Has outline:', !!verifyData.outline);
-			console.log('VERIFICATION: Has title:', !!verifyData.title);
-		} else {
-			console.error('VERIFICATION FAILED: Data NOT found in file for thread_id:', threadId);
-			console.error('Available thread_ids in file:', fileData.map((item: any) => item.thread_id));
+				const homepagePatterns = [
+					/^https?:\/\/[^\/]+\/?$/,
+					/^https?:\/\/www\.[^\/]+\/?$/,
+					/discord\.com\/invite/,
+					/finance\.yahoo\.com\/quote/,
+					/linkedin\.com\/company/,
+					/twitter\.com\/[^\/]+\/?$/,
+					/facebook\.com\/[^\/]+\/?$/,
+					/instagram\.com\/[^\/]+\/?$/,
+					/github\.com\/[^\/]+\/?$/,
+					/\/login/,
+					/\/signup/,
+					/\/register/,
+				];
+
+				const links = response.data.organic_results
+					.filter((item: any) => {
+						const link = item.link.toLowerCase();
+						
+						if (problematicDomains.some(domain => link.includes(domain))) {
+							return false;
+						}
+						
+						if (homepagePatterns.some(pattern => pattern.test(link))) {
+							return false;
+						}
+
+						if (link.endsWith('.pdf')) {
+							return false;
+						}
+						
+						return true;
+					})
+					.map((item: any) => item.link)
+					.slice(0, 6); // Crawl fewer links in quick mode for speed
+
+				console.log(`Found ${links.length} URLs to crawl in quick mode`);
+
+				if (links.length >= 2) {
+					// Crawl URLs
+					console.log('Starting to crawl URLs...');
+					const crawlStartTime = Date.now();
+
+					const crawlResults = await Promise.allSettled(
+						links.map(async (link: string, index: number) => {
+							try {
+								console.log(`[${index + 1}/${links.length}] Crawling:`, link);
+								const crawlApiUrl = 'https://bloggr.ai:3013/crawl';
+
+								const httpsAgentData = new https.Agent({
+									rejectUnauthorized: false,
+								});
+
+								const form = new FormData();
+								form.append('user_id', threadId);
+								form.append('urls', link);
+
+								const crawlResponse = await axios.post(
+									crawlApiUrl,
+									form,
+									{
+										headers: {
+											'Content-Type': 'multipart/form-data',
+											Authorization: `Bearer ${token}`,
+										},
+										httpsAgent: httpsAgentData,
+										timeout: 45000, // 45 seconds (faster than normal mode)
+									}
+								);
+
+								if (crawlResponse.status !== 200) {
+									console.error(`[${index + 1}] Failed with status ${crawlResponse.status}`);
+									return null;
+								}
+
+								console.log(`[${index + 1}] Successfully crawled:`, link);
+								return crawlResponse.data;
+
+							} catch (error: any) {
+								console.error(`[${index + 1}] Error crawling:`, error.message);
+								return null;
+							}
+						})
+					);
+
+					const crawlTotalTime = Date.now() - crawlStartTime;
+					console.log(`Total crawling time: ${crawlTotalTime}ms`);
+
+					const successfulCrawls = crawlResults.filter(
+						result => result.status === 'fulfilled' && result.value !== null
+					).length;
+
+					console.log(`Successfully crawled ${successfulCrawls} out of ${links.length} URLs`);
+
+					// If we got at least 2 successful crawls, try to generate with them
+					if (successfulCrawls >= 2) {
+						console.log('Generating outline with crawled data...');
+
+						const generateOutlineApiUrl = 'https://bloggr.ai:3013/process';
+						const httpsAgentData = new https.Agent({
+							rejectUnauthorized: false,
+						});
+
+						const formProcess = new FormData();
+						formProcess.append('user_id', threadId);
+						formProcess.append('language', 'English');
+						formProcess.append('primary_keyword', primaryKeyword); // ✅ Using researched keyword
+						formProcess.append('title', title); // ✅ Using generated title
+						formProcess.append('include_crawled', 'true');
+						formProcess.append('secondary_keywords', secondaryKeywords.join(', ')); // ✅ Using researched keywords
+
+						const generateOutlineResponse = await axios.post(
+							generateOutlineApiUrl,
+							formProcess,
+							{
+								headers: {
+									...formProcess.getHeaders(),
+									Authorization: `Bearer ${token}`,
+								},
+								httpsAgent: httpsAgentData,
+								timeout: 90000, // 90 seconds
+							}
+						);
+
+						console.log('Outline API response status:', generateOutlineResponse.status);
+
+						const outlineData = generateOutlineResponse.data?.outline_generation?.outline_data;
+
+						// Check if outline generation was successful
+						if (
+							outlineData &&
+							!outlineData.error &&
+							outlineData.message !== 'Insufficient or irrelevant context' &&
+							outlineData.parsed_outline
+						) {
+							console.log('✅ Outline generated successfully with web research');
+							crawlSuccessful = true;
+
+							// Store data with researched keywords
+							const dataToSave = {
+								outline: outlineData.parsed_outline,
+								title: title,
+								primary_keywords: primaryKeyword,
+								secondary_keywords: secondaryKeywords.join(', '), // ✅ Store researched keywords
+								links: [],
+								brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+								aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+								model: 'GPT-o1-mini',
+								language: 'English',
+								user_id: threadId,
+							};
+
+							updateThreadObject(threadId, dataToSave);
+
+							console.log('========================================');
+							console.log('✅ QUICK MODE: Complete with full research');
+							console.log('   Primary Keyword:', primaryKeyword);
+							console.log('   Secondary Keywords:', secondaryKeywords.join(', '));
+							console.log('   Title:', title);
+							console.log('========================================');
+
+							return {
+								success: true,
+								outline_generation: {
+									outline_data: {
+										parsed_outline: outlineData.parsed_outline
+									}
+								},
+								thread_id: threadId,
+								research_used: true,
+								primary_keyword: primaryKeyword,
+								title: title
+							};
+						}
+					}
+				}
+			}
+		} catch (crawlError: any) {
+			console.error('═══ CRAWL/OUTLINE ERROR DETAILS ═══');
+			console.error('Error message:', crawlError.message);
+			console.error('Status code:', crawlError.response?.status);
+			console.error('Status text:', crawlError.response?.statusText);
+			console.error('Response data:', crawlError.response?.data);
+			console.error('Request URL:', crawlError.config?.url);
+			console.error('Request method:', crawlError.config?.method);
+			console.error('═══════════════════════════════════');
 		}
 
-		console.log('========================================');
-		console.log('QUICK MODE: Outline generation complete');
-		console.log('========================================');
+		// ============================================================
+		// FALLBACK: If crawling fails or doesn't work, use OpenAI only
+		// ============================================================
+		
+		if (!crawlSuccessful) {
+			console.log('📋 Generating outline with OpenAI only (no web research)...');
+			const outlineContent = await openaiService.generateOutlineFromTopic(
+				topic,
+				title,
+				primaryKeyword
+			);
 
-		// Return in the same format as the external API for consistency
-		return {
-			success: true,
-			outline_generation: {
-				outline_data: {
-					parsed_outline: outlineContent
-				}
-			},
-			thread_id: threadId
-		};
+			console.log('Outline generated successfully (AI-only mode)');
+
+			// Parse outline string to array
+			let parsedOutline;
+			try {
+				parsedOutline = JSON.parse(outlineContent);
+			} catch (parseError) {
+				console.error('Failed to parse outline JSON:', parseError);
+				throw new Error('Invalid outline format from OpenAI');
+			}
+
+			// Store data with researched keywords (even in fallback)
+			const dataToSave = {
+				outline: parsedOutline, // ✅ Store as array, not string
+				title: title,
+				primary_keywords: primaryKeyword,
+				secondary_keywords: secondaryKeywords.join(', '), // ✅ Store researched keywords
+				links: [],
+				brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+				aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+				model: 'GPT-o1-mini',
+				language: 'English',
+				user_id: threadId,
+			};
+
+			updateThreadObject(threadId, dataToSave);
+
+			console.log('========================================');
+			console.log('✅ QUICK MODE: Complete with AI fallback');
+			console.log('   Primary Keyword:', primaryKeyword);
+			console.log('   Secondary Keywords:', secondaryKeywords.join(', '));
+			console.log('   Title:', title);
+			console.log('========================================');
+
+			return {
+				success: true,
+				outline_generation: {
+					outline_data: {
+						parsed_outline: parsedOutline // ✅ Return array, not string
+					}
+				},
+				thread_id: threadId,
+				research_used: false,
+				primary_keyword: primaryKeyword,
+				title: title
+			};
+		}
+		
 	} catch (error: any) {
 		console.error('========================================');
 		console.error('ERROR in Quick Mode:', error);
@@ -836,57 +1094,6 @@ export const getQuickModeOutline = async (
 
 
 
-// export const getQuickModeOutline = async (
-// 	topic: string,
-// 	threadId: string
-// ): Promise<any> => {
-// 	console.log('QUICK MODE: Generating outline from topic only');
-
-// 	try {
-// 		// Step 1: Auto-generate title from topic
-// 		const title = `Understanding ${topic.charAt(0).toUpperCase() + topic.slice(1)}: A Complete Guide`;
-
-// 		// Step 2: Use topic as primary keyword
-// 		const primaryKeyword = topic.toLowerCase();
-
-// 		// Step 3: Generate outline using OpenAI (no external API)
-// 		console.log('Generating outline with OpenAI...');
-// 		const outlineContent = await openaiService.generateOutlineFromTopic(
-// 			topic,
-// 			title,
-// 			primaryKeyword
-// 		);
-
-// 		console.log('Outline generated successfully');
-
-// 		// Step 4: Store data for create_blog()
-// 		updateThreadObject(threadId, {
-// 			outline: outlineContent,
-// 			title: title,
-// 			primary_keywords: primaryKeyword,
-// 			secondary_keywords: '',
-// 			links: [],
-// 			brandVoice: '- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
-// 			aiPersona: 'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
-// 			model: 'GPT-o1-mini',
-// 			language: 'English',
-// 			user_id: threadId,
-// 		});
-
-// 		// Return in the same format as the external API for consistency
-// 		return {
-// 			success: true,
-// 			outline_generation: {
-// 				outline_data: {
-// 					parsed_outline: outlineContent
-// 				}
-// 			}
-// 		};
-// 	} catch (error: any) {
-// 		console.error('ERROR in Quick Mode:', error);
-// 		throw error;
-// 	}
-// };
 
 export const getRegeneratedOutlineData = async (
 	threadId: string,
