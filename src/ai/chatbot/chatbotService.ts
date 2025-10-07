@@ -236,8 +236,7 @@ export const getPrimaryKeywordData = async (
 				);
 			} catch (error) {
 				console.error(
-					`Error fetching for keyword "${userKeyword}":`,
-					error
+					`Error fetching for keyword "${userKeyword}":`
 				);
 			}
 		}
@@ -257,15 +256,15 @@ export const getPrimaryKeywordData = async (
 			'filterKeywordsWithReferenceMeaningArray'
 		);
 		// ✅ FIX: Actually return this data!
-		if (
-			filterKeywordsWithReferenceMeaningArray &&
-			filterKeywordsWithReferenceMeaningArray.length > 0
-		) {
-			console.log(
-				`✅ Returning ${filterKeywordsWithReferenceMeaningArray.length} keywords from filter`
-			);
-			return filterKeywordsWithReferenceMeaningArray; // ← ADD THIS LINE
-		}
+		// if (
+		// 	filterKeywordsWithReferenceMeaningArray &&
+		// 	filterKeywordsWithReferenceMeaningArray.length > 0
+		// ) {
+		// 	console.log(
+		// 		`✅ Returning ${filterKeywordsWithReferenceMeaningArray.length} keywords from filter`
+		// 	);
+		// 	return filterKeywordsWithReferenceMeaningArray; // ← ADD THIS LINE
+		// }
 
 		// If filter returned nothing, return whatever we have in finalKeywordsArray
 		console.log(finalKeywordsArray.length, 'finalKeywordsArray');
