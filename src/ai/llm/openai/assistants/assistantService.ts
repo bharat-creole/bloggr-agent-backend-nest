@@ -87,7 +87,6 @@ class assistantService {
 
   public async createAssistantThread(userId?: string, messageName?: string) {
     const thread = await this.openai.beta.threads.create();
-    console.log('assistantThread:', userId, messageName);
 
     // Save thread to database
     const savedThread = await prisma.threads.create({
@@ -138,7 +137,7 @@ class assistantService {
     console.log('Current Time IST:', currentTimeIST);
     await this.openai.beta.threads.messages.create(threadId, {
       role: 'user',
-      content: `${content}Current·time·is·:${currentTimeIST}`
+      content: `${content}`
     });
 
     const stream = this.openai.beta.threads.runs.stream(threadId, {
