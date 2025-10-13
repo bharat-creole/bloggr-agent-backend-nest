@@ -127,7 +127,7 @@ class assistantService {
 
 		const stream = this.openai.beta.threads.runs.stream(threadId, {
 			// assistant_id: 'asst_kZeG0dLUN88S3JX26gSduAEH',
-			assistant_id: 'asst_60wAlmqMuI0GcI5sgCYoTx7v',
+			assistant_id: 'asst_VCcoXKC5b3gmTCxZjIq74Mlw',
 		});
 
 		for await (const chunk of stream) {

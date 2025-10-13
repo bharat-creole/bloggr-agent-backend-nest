@@ -112,8 +112,7 @@ export const getPrimaryKeywordData = async (
 	try {
 		// Get the Rank data from Google Search
 		const API_KEY =
-			'243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
-		('243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd');
+			'666e2c786d1bddf1a7808b32f2efe6de893c72b3abb74d035984c925a7aedba5';
 		const query = keyword;
 
 		const getSerpApiUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(
@@ -860,89 +859,95 @@ export const getQuickModeOutline = async (
 		// ============================================================
 		console.log('🌐 Step 3: Starting web crawling research...');
 
-		const API_KEY =
-			'243decea8abf62fdfb9db737a827eee810492a3253d4b23491edbd9b0b8e6fbd';
-		const query = `${primaryKeyword} article blog guide`;
-		const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
-			query
-		)}&hl=en&gl=us&api_key=${API_KEY}`;
+		// const API_KEY =
+		// 	'666e2c786d1bddf1a7808b32f2efe6de893c72b3abb74d035984c925a7aedba5';
+		// const query = `${primaryKeyword} article blog guide`;
+		// const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
+		// 	query
+		// )}&hl=en&gl=us&api_key=${API_KEY}`;
 
 		let crawlSuccessful = false;
 
 		try {
-			console.log('Searching for relevant articles...');
-			const response = await axios.get(url);
+			// console.log('Searching for relevant articles...');
+			// const response = await axios.get(url);
 
-			if (
-				response.data.organic_results &&
-				response.data.organic_results.length > 0
-			) {
-				// Filter problematic domains and homepages
-				const problematicDomains = [
-					'medium.com/@',
-					'sciencedirect.com',
-					'researchgate.net',
-					'jstor.org',
-					'academia.edu',
-					'springer.com',
-					'ieee.org',
-				];
+			// if (
+			// 	response.data.organic_results &&
+			// 	response.data.organic_results.length > 0
+			// ) {
+			// Filter problematic domains and homepages
+			// const problematicDomains = [
+			// 	'medium.com/@',
+			// 	'sciencedirect.com',
+			// 	'researchgate.net',
+			// 	'jstor.org',
+			// 	'academia.edu',
+			// 	'springer.com',
+			// 	'ieee.org',
+			// ];
 
-				const homepagePatterns = [
-					/^https?:\/\/[^\/]+\/?$/,
-					/^https?:\/\/www\.[^\/]+\/?$/,
-					/discord\.com\/invite/,
-					/finance\.yahoo\.com\/quote/,
-					/linkedin\.com\/company/,
-					/twitter\.com\/[^\/]+\/?$/,
-					/facebook\.com\/[^\/]+\/?$/,
-					/instagram\.com\/[^\/]+\/?$/,
-					/github\.com\/[^\/]+\/?$/,
-					/\/login/,
-					/\/signup/,
-					/\/register/,
-				];
+			// const homepagePatterns = [
+			// 	/^https?:\/\/[^\/]+\/?$/,
+			// 	/^https?:\/\/www\.[^\/]+\/?$/,
+			// 	/discord\.com\/invite/,
+			// 	/finance\.yahoo\.com\/quote/,
+			// 	/linkedin\.com\/company/,
+			// 	/twitter\.com\/[^\/]+\/?$/,
+			// 	/facebook\.com\/[^\/]+\/?$/,
+			// 	/instagram\.com\/[^\/]+\/?$/,
+			// 	/github\.com\/[^\/]+\/?$/,
+			// 	/\/login/,
+			// 	/\/signup/,
+			// 	/\/register/,
+			// ];
 
-				const links = response.data.organic_results
-					.filter((item: any) => {
-						const link = item.link.toLowerCase();
+			// const links = response.data.organic_results
+			// 	.filter((item: any) => {
+			// 		const link = item.link.toLowerCase();
 
-						if (
-							problematicDomains.some((domain) =>
-								link.includes(domain)
-							)
-						) {
-							return false;
-						}
+			// 		if (
+			// 			problematicDomains.some((domain) =>
+			// 				link.includes(domain)
+			// 			)
+			// 		) {
+			// 			return false;
+			// 		}
 
-						if (
-							homepagePatterns.some((pattern) =>
-								pattern.test(link)
-							)
-						) {
-							return false;
-						}
+			// 		if (
+			// 			homepagePatterns.some((pattern) =>
+			// 				pattern.test(link)
+			// 			)
+			// 		) {
+			// 			return false;
+			// 		}
 
-						if (link.endsWith('.pdf')) {
-							return false;
-						}
+			// 		if (link.endsWith('.pdf')) {
+			// 			return false;
+			// 		}
 
-						return true;
-					})
-					.map((item: any) => item.link)
-					.slice(0, 6); // Crawl fewer links in quick mode for speed
+			// 		return true;
+			// 	})
+			// 	.map((item: any) => item.link)
+			// 	.slice(0, 6); // Crawl fewer links in quick mode for speed
 
-				console.log(
-					`Found ${links.length} URLs to crawl in quick mode`
-				);
+			// console.log(
+			// 	`Found ${links.length} URLs to crawl in quick mode`
+			// );
+			let links: any[] = [];
+			links = await perplexityService.getCompletion(
+				`Given the blog title "${title}" and the primary keyword "${primaryKeyword}", provice sourced links for the blog post. Only provide the links, no other text. top 5 only`
+			);
 
-				if (links.length >= 2) {
-					// Crawl URLs
-					console.log('Starting to crawl URLs...');
-					const crawlStartTime = Date.now();
+			if (links.length >= 1) {
+				// Crawl URLs
+				console.log('Starting to crawl URLs...');
+				const crawlStartTime = Date.now();
 
-					const crawlResults = await Promise.allSettled(
-						links.map(
+				const crawlResults = await Promise.allSettled(
+					links
+						.slice(0, 3)
+						.map(
 							async (
 								link: string,
 								index: number
@@ -983,7 +988,7 @@ export const getQuickModeOutline = async (
 												},
 												httpsAgent:
 													httpsAgentData,
-												timeout: 45000, // 45 seconds (faster than normal mode)
+												// timeout: 45000, // 45 seconds (faster than normal mode)
 											}
 										);
 
@@ -1020,152 +1025,137 @@ export const getQuickModeOutline = async (
 								}
 							}
 						)
-					);
+				);
 
-					const crawlTotalTime =
-						Date.now() - crawlStartTime;
+				const crawlTotalTime = Date.now() - crawlStartTime;
+				console.log(`Total crawling time: ${crawlTotalTime}ms`);
+
+				const successfulCrawls = crawlResults.filter(
+					(result) =>
+						result.status === 'fulfilled' &&
+						result.value !== null
+				).length;
+
+				console.log(
+					`Successfully crawled ${successfulCrawls} out of ${links.length} URLs`
+				);
+
+				// If we got at least 2 successful crawls, try to generate with them
+				if (successfulCrawls >= 2) {
 					console.log(
-						`Total crawling time: ${crawlTotalTime}ms`
+						'Generating outline with crawled data...'
 					);
 
-					const successfulCrawls = crawlResults.filter(
-						(result) =>
-							result.status === 'fulfilled' &&
-							result.value !== null
-					).length;
+					const generateOutlineApiUrl =
+						'https://bloggr.ai:3013/process';
+					const httpsAgentData = new https.Agent({
+						rejectUnauthorized: false,
+					});
 
-					console.log(
-						`Successfully crawled ${successfulCrawls} out of ${links.length} URLs`
-					);
+					const formProcess = new FormData();
+					formProcess.append('user_id', threadId);
+					formProcess.append('language', 'English');
+					formProcess.append(
+						'primary_keyword',
+						primaryKeyword
+					); // ✅ Using researched keyword
+					formProcess.append('title', title); // ✅ Using generated title
+					formProcess.append('include_crawled', 'true');
+					formProcess.append(
+						'secondary_keywords',
+						secondaryKeywords.join(', ')
+					); // ✅ Using researched keywords
 
-					// If we got at least 2 successful crawls, try to generate with them
-					if (successfulCrawls >= 2) {
-						console.log(
-							'Generating outline with crawled data...'
-						);
-
-						const generateOutlineApiUrl =
-							'https://bloggr.ai:3013/process';
-						const httpsAgentData = new https.Agent({
-							rejectUnauthorized: false,
-						});
-
-						const formProcess = new FormData();
-						formProcess.append('user_id', threadId);
-						formProcess.append('language', 'English');
-						formProcess.append(
-							'primary_keyword',
-							primaryKeyword
-						); // ✅ Using researched keyword
-						formProcess.append('title', title); // ✅ Using generated title
-						formProcess.append(
-							'include_crawled',
-							'true'
-						);
-						formProcess.append(
-							'secondary_keywords',
-							secondaryKeywords.join(', ')
-						); // ✅ Using researched keywords
-
-						const generateOutlineResponse =
-							await axios.post(
-								generateOutlineApiUrl,
-								formProcess,
-								{
-									headers: {
-										...formProcess.getHeaders(),
-										Authorization: `Bearer ${token}`,
-									},
-									httpsAgent:
-										httpsAgentData,
-									timeout: 90000, // 90 seconds
-								}
-							);
-
-						console.log(
-							'Outline API response status:',
-							generateOutlineResponse.status
-						);
-
-						const outlineData =
-							generateOutlineResponse.data
-								?.outline_generation
-								?.outline_data;
-
-						// Check if outline generation was successful
-						if (
-							outlineData &&
-							!outlineData.error &&
-							outlineData.message !==
-								'Insufficient or irrelevant context' &&
-							outlineData.parsed_outline
-						) {
-							console.log(
-								'✅ Outline generated successfully with web research'
-							);
-							crawlSuccessful = true;
-
-							// Store data with researched keywords
-							const dataToSave = {
-								outline: outlineData.parsed_outline,
-								title: title,
-								primary_keywords:
-									primaryKeyword,
-								secondary_keywords:
-									secondaryKeywords.join(
-										', '
-									), // ✅ Store researched keywords
-								links: [],
-								brandVoice:
-									'- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
-								aiPersona:
-									'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
-								model: 'GPT-o1-mini',
-								language: 'English',
-								user_id: threadId,
-							};
-
-							updateThreadObject(
-								threadId,
-								dataToSave
-							);
-
-							console.log(
-								'========================================'
-							);
-							console.log(
-								'✅ QUICK MODE: Complete with full research'
-							);
-							console.log(
-								'   Primary Keyword:',
-								primaryKeyword
-							);
-							console.log(
-								'   Secondary Keywords:',
-								secondaryKeywords.join(', ')
-							);
-							console.log('   Title:', title);
-							console.log(
-								'========================================'
-							);
-
-							return {
-								success: true,
-								outline_generation: {
-									outline_data: {
-										parsed_outline:
-											outlineData.parsed_outline,
-									},
-								},
-								thread_id: threadId,
-								research_used: true,
-								primary_keyword: primaryKeyword,
-								title: title,
-							};
+					const generateOutlineResponse = await axios.post(
+						generateOutlineApiUrl,
+						formProcess,
+						{
+							headers: {
+								...formProcess.getHeaders(),
+								Authorization: `Bearer ${token}`,
+							},
+							httpsAgent: httpsAgentData,
+							timeout: 90000, // 90 seconds
 						}
+					);
+
+					console.log(
+						'Outline API response status:',
+						generateOutlineResponse.status
+					);
+
+					const outlineData =
+						generateOutlineResponse.data
+							?.outline_generation?.outline_data;
+
+					// Check if outline generation was successful
+					if (
+						outlineData &&
+						!outlineData.error &&
+						outlineData.message !==
+							'Insufficient or irrelevant context' &&
+						outlineData.parsed_outline
+					) {
+						console.log(
+							'✅ Outline generated successfully with web research'
+						);
+						crawlSuccessful = true;
+
+						// Store data with researched keywords
+						const dataToSave = {
+							outline: outlineData.parsed_outline,
+							title: title,
+							primary_keywords: primaryKeyword,
+							secondary_keywords:
+								secondaryKeywords.join(', '), // ✅ Store researched keywords
+							links: [],
+							brandVoice:
+								'- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+							aiPersona:
+								'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+							model: 'Gemini-2.5 Flash',
+							language: 'English',
+							user_id: threadId,
+						};
+
+						updateThreadObject(threadId, dataToSave);
+
+						console.log(
+							'========================================'
+						);
+						console.log(
+							'✅ QUICK MODE: Complete with full research'
+						);
+						console.log(
+							'   Primary Keyword:',
+							primaryKeyword
+						);
+						console.log(
+							'   Secondary Keywords:',
+							secondaryKeywords.join(', ')
+						);
+						console.log('   Title:', title);
+						console.log(
+							'========================================'
+						);
+
+						return {
+							success: true,
+							outline_generation: {
+								outline_data: {
+									parsed_outline:
+										outlineData.parsed_outline,
+								},
+							},
+							thread_id: threadId,
+							research_used: true,
+							primary_keyword: primaryKeyword,
+							title: title,
+						};
 					}
 				}
 			}
+			// }
 		} catch (crawlError: any) {
 			console.error('═══ CRAWL/OUTLINE ERROR DETAILS ═══');
 			console.error('Error message:', crawlError.message);
@@ -1183,6 +1173,8 @@ export const getQuickModeOutline = async (
 		// ============================================================
 		// FALLBACK: If crawling fails or doesn't work, use OpenAI only
 		// ============================================================
+
+		console.log(crawlSuccessful, 'CrawlSuccessful');
 
 		if (!crawlSuccessful) {
 			console.log(
@@ -1220,7 +1212,7 @@ export const getQuickModeOutline = async (
 					'- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
 				aiPersona:
 					'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
-				model: 'GPT-o1-mini',
+				model: 'Gemini-2.5 Flash',
 				language: 'English',
 				user_id: threadId,
 			};
@@ -1337,7 +1329,7 @@ export const addInterlinkingData = async (
 				'- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
 			aiPersona:
 				'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
-			model: 'GPT-o1-mini',
+			model: 'Gemini-2.5 Flash',
 			language: 'English',
 			user_id: threadId,
 		});
