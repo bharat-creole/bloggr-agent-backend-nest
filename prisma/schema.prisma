@@ -261,11 +261,18 @@ enum enum_logs_event {
 }
 
 enum enum_plans_llmModels {
-  gpt_4o           @map("gpt-4o")
-  gemini_1_5_flash @map("gemini-1.5-flash")
-  gemini_1_5_pro   @map("gemini-1.5-pro")
-  gpt_o1_mini      @map("gpt-o1-mini")
-  claude_3_5_sonet @map("claude_3.5_sonet")
+  gpt_4o            @map("gpt-4o")
+  gemini_1_5_flash  @map("gemini-1.5-flash")
+  gemini_1_5_pro    @map("gemini-1.5-pro")
+  gpt_o1_mini       @map("gpt-o1-mini")
+  claude_3_5_sonet  @map("claude_3.5_sonet")
+  gemini_2_5_flash  @map("gemini-2.5-flash")
+  gemini_2_5_pro    @map("gemini-2.5-pro")
+  gpt_5             @map("gpt-5")
+  claude_4_5_sonnet @map("claude_4.5_sonnet")
+  o4_mini           @map("o4-mini")
+  claude_4_5_sonet  @map("claude_4.5_sonet")
+  gpt_o4_mini       @map("gpt-o4-mini")
 }
 
 enum enum_users_language {
@@ -281,9 +288,14 @@ enum enum_users_model {
   basic
   standard
   premium
-  gpt_4o           @map("gpt-4o")
-  gemini_1_5_flash @map("gemini-1.5-flash")
-  gemini_1_5_pro   @map("gemini-1.5-pro")
-  gpt_o1_mini      @map("gpt-o1-mini")
-  claude_3_5_sonet @map("claude_3.5_sonet")
+  gpt_4o            @map("gpt-4o")
+  gemini_1_5_flash  @map("gemini-1.5-flash")
+  gemini_1_5_pro    @map("gemini-1.5-pro")
+  gpt_o1_mini       @map("gpt-o1-mini")
+  claude_3_5_sonet  @map("claude_3.5_sonet")
+  gemini_2_5_flash  @map("gemini-2.5-flash")
+  gemini_2_5_pro    @map("gemini-2.5-pro")
+  gpt_5             @map("gpt-5")
+  claude_4_5_sonnet @map("claude_4.5_sonnet")
+  o4_mini           @map("o4-mini")
 }
