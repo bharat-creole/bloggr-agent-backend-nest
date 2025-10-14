@@ -130,11 +130,12 @@ export const setPrimarySecondaryKeyword = async (
 	next: NextFunction
 ): Promise<any> => {
 	try {
-		const { primaryKeyword, secondaryKeyword } = req.body;
+		const { primaryKeyword, secondaryKeyword, threadId } = req.body;
 		const setPrimarySecondaryKeyword =
 			await setPrimarySecondaryKeywordData(
 				primaryKeyword,
-				secondaryKeyword
+				secondaryKeyword,
+				threadId
 			);
 		return res.status(200).json({
 			message: 'success',

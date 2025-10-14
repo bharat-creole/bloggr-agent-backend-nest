@@ -12,7 +12,7 @@ const path = require('path');
 const FormData = require('form-data');
 // ----------------------------------------------------------------------------------------
 const token =
-	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0YjE2ZGVmMC04NzMzLTQyMmQtOTYzNS1jZmEwYTVmZjBmYWUiLCJlbWFpbCI6Imp1emFyLmFudHJpQGNyZW9sZXN0dWRpb3MuY29tIiwiaWF0IjoxNzUzNDMyNzU2fQ.B61S53ZTmTuo3qcx56XSh2EVdyxP91LFZHAjPzFt-sk';
+	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMDI5N2Q0Yy02M2QwLTRlOTEtYWZmZC1kMTYyNzRhODdhMjkiLCJlbWFpbCI6ImJoYXJhdC5yYWpAY3Jlb2xlc3R1ZGlvcy5jb20iLCJpYXQiOjE3NTgwMjYwODB9.Z6GN4aH5qF3srWDARBAr8IWBaqBbYzdzB34KqEsoTuU';
 
 const filePath = path.join(__dirname, '../../blog-draft.json');
 
@@ -271,40 +271,6 @@ export const getPrimaryKeywordData = async (
 		if (finalKeywordsArray.length > 0) {
 			return finalKeywordsArray;
 		}
-
-		// __________________________________________________________
-		// const apiUrl = 'https://bloggr.ai:3011/getKeywords';
-
-		// const httpsAgent = new https.Agent({
-		// 	rejectUnauthorized: false,
-		// });
-
-		// const response = await axios.post(
-		// 	apiUrl,
-		// 	{
-		// 		keyword,
-		// 		country,
-		// 	},
-		// 	{
-		// 		headers: {
-		// 			'Content-Type': 'application/json',
-		// 			Authorization: `Bearer ${token}`,
-		// 		},
-		// 		httpsAgent,
-		// 	}
-		// );
-
-		// if (response.status !== 200) {
-		// 	throw new Error(
-		// 		`Failed to fetch primary keyword: ${response.statusText}`
-		// 	);
-		// }
-		// const keywordTexts = response.data.text.map(
-		// 	(item: any) => item.text
-		// );
-
-		// console.log(keywordTexts, 'keywordTexts');
-		// return keywordTexts.slice(0, 5);
 	} catch (error: any) {
 		console.error('ERROR:', error);
 	}
@@ -312,13 +278,31 @@ export const getPrimaryKeywordData = async (
 
 export const setPrimarySecondaryKeywordData = async (
 	primaryKeyword: string,
-	secondaryKeyword: string
+	secondaryKeyword: any,
+	threadId: any
 ): Promise<any> => {
 	console.log(
 		primaryKeyword,
 		secondaryKeyword,
 		'primaryKeyword>>>>>>>>>>>>>>>>>>, secondaryKeyword>>>>>>>>>>>>>>>>>>>>>>>>>>>'
 	);
+
+	const dataToSave = {
+		title: "Exploring OpenAI's Potential: How AWS Transforms AI Capabilities",
+		outline: [],
+		primary_keywords: primaryKeyword,
+		secondary_keywords: secondaryKeyword.join(', '), // ✅ Store researched keywords
+		links: [],
+		brandVoice:
+			'- To proceed with the analysis in the requested format, please provide key details or a summary about the brand. This may include:\r\n- Mission and vision of the brand\r\n- Description of products or services\r\n- Target market or audience\r\n- Tone and style of communication\r\n- Distinguishing features or traits\r\n- With this information, I can then craft a comprehensive brand voice description for you.',
+		aiPersona:
+			'H1: Best AI Tools for Writing SEO-Rich Blog Content\n\nH2: TL;DR\n\nH2: Introduction\n\nH2: Why Use AI Tools for SEO Blog Writing?\n\nH2: Key Features to Look for in AI SEO Blog Tools\n(Add 5-6 Key Features)\n\nH2: 5 Best AI Tools for Writing SEO-Rich Blog Content in 2025\nH3s:\nBloggr.AI\nJasper AI\nWritesonic\nCopy.ai\nNeuralText\n\nH3: Conclusion',
+		model: 'Gemini-2.5 Flash',
+		language: 'English',
+		user_id: threadId,
+	};
+
+	updateThreadObject(threadId, dataToSave);
 };
 
 export const findKeywordInfoData = async (keywords: string[]): Promise<any> => {
@@ -380,36 +364,42 @@ export const getTitleData = async (
 	topic: string,
 	primaryKeyword: string
 ): Promise<any> => {
-	console.log(topic, primaryKeyword, 'topic, primaryKeyword');
+	try {
+		console.log(topic, primaryKeyword, 'topic, primaryKeyword');
 
-	const apiUrl = 'https://bloggr.ai:3011/generatetitle';
+		const apiUrl = 'https://bloggr.ai:3011/generatetitle';
 
-	const httpsAgent = new https.Agent({
-		rejectUnauthorized: false,
-	});
+		const httpsAgent = new https.Agent({
+			rejectUnauthorized: false,
+		});
 
-	const response = await axios.post(
-		apiUrl,
-		{
-			topic,
-			primaryKeyword,
-		},
-		{
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`,
+		const response = await axios.post(
+			apiUrl,
+			{
+				topic,
+				primaryKeyword,
 			},
-			httpsAgent,
+			{
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				},
+				httpsAgent,
+			}
+		);
+
+		if (response.status !== 200) {
+			throw new Error(
+				`Failed to fetch title: ${response.statusText}`
+			);
 		}
-	);
 
-	if (response.status !== 200) {
-		throw new Error(`Failed to fetch title: ${response.statusText}`);
+		const title = response.data.title;
+		console.log(title, 'title');
+		return title;
+	} catch (error) {
+		console.error(`Error fetching title`);
 	}
-
-	const title = response.data.title;
-	console.log(title, 'title');
-	return title;
 };
 
 export const getReferenceOutlineData = async (
@@ -1373,7 +1363,7 @@ export const createBlogData = async (threadId: string): Promise<any> => {
 
 		return response.data.blog_content;
 	} catch (error: any) {
-		console.error('Error generating blog:', error.message);
+		console.error('Error generating blog:', error);
 		return { message: 'failed' };
 	}
 };
